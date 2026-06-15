@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  --color-warm-bg: #fdfbf7;
+  --color-warm-card: #ffffff;
+  --color-warm-border: rgba(74, 55, 40, 0.07);
+  --color-brand-espresso: #4a3728;
+  --color-brand-caramel: #b45309;
+  --color-brand-gold: #d97706;
+  --color-text-main: #231b15;
+  --color-text-dim: #786a60;
+  
+  /* Map standard colors so Tailwind utility classes match our espresso/amber theme */
+  --color-indigo-300: #ca8a04;
+  --color-indigo-400: #b45309;
+  --color-indigo-500: #854d0e;
+  --color-indigo-600: #4a3728;
+  --color-indigo-700: #3d2b20;
+  
+  --color-purple-300: #eab308;
+  --color-purple-400: #ca8a04;
+  --color-purple-500: #a16207;
+  --color-purple-600: #713f12;
+  --color-purple-700: #542f0c;
+  
+  --color-cyan-300: #f59e0b;
+  --color-cyan-400: #d97706;
+  --color-cyan-500: #b45309;
+  
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 3s ease-in-out infinite;
+  --animate-spin-slow: spin 12s linear infinite;
+  --animate-shimmer: shimmer 2s infinite linear;
+  --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 0.7;
+      box-shadow: 0 0 15px rgba(217, 119, 6, 0.05), inset 0 0 15px rgba(180, 83, 9, 0.02);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 25px rgba(217, 119, 6, 0.15), inset 0 0 20px rgba(180, 83, 9, 0.05);
+    }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(74, 55, 40, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(180, 83, 9, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 83, 9, 0.4);
+}
+
+/* Base Body Styles */
+body {
+  background-color: var(--color-warm-bg);
+  color: var(--color-text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Glassmorphism card utility classes */
+.glass-card {
+  background: var(--color-warm-card);
+  border: 1px solid var(--color-warm-border);
+  box-shadow: 0 4px 20px 0 rgba(74, 55, 40, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(180, 83, 9, 0.2);
+  box-shadow: 0 10px 30px 0 rgba(180, 83, 9, 0.07);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(74, 55, 40, 0.12);
+  color: var(--color-text-main);
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--color-brand-caramel);
+  box-shadow: 0 0 10px rgba(180, 83, 9, 0.08);
+}
+
+/* Custom glow utility for radial backdrops */
+.radial-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(180, 83, 9, 0.05) 0%, rgba(217, 119, 6, 0.01) 50%, rgba(0, 0, 0, 0) 100%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
