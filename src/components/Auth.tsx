@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react';
+import { getSupabase } from '../utils/supabaseClient';
 
 const LinkedinIcon = ({ className }: { className?: string }) => (
   <svg
@@ -17,17 +18,15 @@ const LinkedinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-interface AuthProps {
-  onLoginSuccess: (email: string) => void;
-}
-
-export default function Auth({ onLoginSuccess }: AuthProps) {
+export default function Auth() {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please fill in all fields.');
@@ -43,21 +42,66 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
     }
 
     setError('');
+    setInfo('');
     setIsLoading(true);
 
-    // Simulate short network delay for premium feel
-    setTimeout(() => {
+    try {
+      const supabase = getSupabase();
+      if (isSignUp) {
+        // Sign Up Flow
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (signUpError) {
+          setError(signUpError.message);
+        } else if (data.user && data.session === null) {
+          // If email confirmation is enabled on Supabase
+          setInfo('Registration successful! Please check your email for a confirmation link.');
+        } else {
+          setInfo('Account created successfully!');
+        }
+      } else {
+        // Sign In Flow
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          setError(signInError.message);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-      onLoginSuccess(email);
-    }, 1200);
+    }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
+    setError('');
+    setInfo('');
     setIsLoading(true);
-    setTimeout(() => {
+    
+    try {
+      const supabase = getSupabase();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (oauthError) {
+        setError(oauthError.message);
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      setError(err.message || 'OAuth error occurred.');
       setIsLoading(false);
-      onLoginSuccess('google.user@gmail.com');
-    }, 1000);
+    }
   };
 
   return (
@@ -83,11 +127,19 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
 
         {/* Form Card */}
         <div className="glass-card rounded-2xl p-6 md:p-8">
-          <h2 className="text-xl font-semibold text-slate-800 mb-6">Welcome Back</h2>
+          <h2 className="text-xl font-semibold text-slate-800 mb-6">
+            {isSignUp ? 'Create an Account' : 'Welcome Back'}
+          </h2>
 
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-600">
               {error}
+            </div>
+          )}
+
+          {info && (
+            <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-600">
+              {info}
             </div>
           )}
 
@@ -141,12 +193,26 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>Sign In</span>
+                  <span>{isSignUp ? 'Sign Up' : 'Sign In'}</span>
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
             </button>
           </form>
+
+          {/* Toggle Link */}
+          <div className="text-center mt-4">
+            <button
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError('');
+                setInfo('');
+              }}
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium hover:underline cursor-pointer"
+            >
+              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+            </button>
+          </div>
 
           {/* Divider */}
           <div className="relative my-6">
@@ -168,7 +234,6 @@ export default function Auth({ onLoginSuccess }: AuthProps) {
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                {/* SVG Google Logo */}
                 <svg className="w-4 h-4 mr-2.5" viewBox="0 0 24 24">
                   <path
                     fill="#EA4335"

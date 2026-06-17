@@ -1,606 +1,688 @@
-import { useState } from 'react';
-import { Sparkles, Edit2, Check, X, Sliders, MessageSquare, Smile, FileSpreadsheet, LayoutList, RefreshCw, LogOut } from 'lucide-react';
+import { useState } from "react";
+import {
+	Sparkles,
+	Edit2,
+	Check,
+	X,
+	Sliders,
+	MessageSquare,
+	Smile,
+	FileSpreadsheet,
+	LayoutList,
+	RefreshCw,
+	Cpu,
+	Target,
+} from "lucide-react";
+
+export interface DnaField<T> {
+	value: T;
+	reasoning: string;
+	confidence: number;
+}
 
 export interface WritingProfile {
-  personaName: string;
-  personaDescription: string;
-  tone: string[];
-  hookStyle: string;
-  hookExample: string;
-  avgLength: number;
-  emojiUsage: string;
-  emojiPercent: number;
-  ctaStyle: string[];
-  sentenceStructure: string;
-  storytellingPattern: string;
-  vocabularyComplexity: string;
-  formattingStyle: string;
+	tone: DnaField<string>;
+	topic: DnaField<string[]>;
+	avg_words: DnaField<number>;
+	hoop_type: DnaField<string>;
+	writing_type: DnaField<string>;
+	paragraph_size: DnaField<string>;
+	emoji_frequency: DnaField<string>;
+
+	// Mapped UI properties
+	personaName: string;
+	personaDescription: string;
 }
 
 interface ProfileDashboardProps {
-  profile: WritingProfile;
-  onUpdateProfile: (updated: WritingProfile) => void;
-  onReset: () => void;
-  onLogout: () => void;
-  onProceedToTopics: () => void;
+	profile: WritingProfile;
+	onUpdateProfile: (updated: WritingProfile) => void;
+	onReset: () => void;
+	onProceedToTopics: () => void;
 }
 
 export default function ProfileDashboard({
-  profile,
-  onUpdateProfile,
-  onReset,
-  onLogout,
-  onProceedToTopics,
+	profile,
+	onUpdateProfile,
+	onReset,
+	onProceedToTopics,
 }: ProfileDashboardProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState<WritingProfile>({ ...profile });
+	const [isEditing, setIsEditing] = useState(false);
+	const [editedProfile, setEditedProfile] = useState<WritingProfile>({
+		...profile,
+	});
 
-  const handleSave = () => {
-    onUpdateProfile(editedProfile);
-    setIsEditing(false);
-  };
+	const handleSave = () => {
+		// Compute fresh persona name based on updated fields
+		const wType = (editedProfile.writing_type.value || "").toLowerCase();
+		const toneVal = (editedProfile.tone.value || "").toLowerCase();
+		let personaName = "The Technical Storyteller";
+		if (wType.includes("inform") || wType.includes("educat")) {
+			personaName = "The Authority Educator";
+		} else if (toneVal.includes("bold") || toneVal.includes("assert")) {
+			personaName = "The Bold Thought Leader";
+		} else if (toneVal.includes("convers") || toneVal.includes("friend")) {
+			personaName = "The Conversational Networker";
+		}
 
-  const handleCancel = () => {
-    setEditedProfile({ ...profile });
-    setIsEditing(false);
-  };
+		const updated = {
+			...editedProfile,
+			personaName,
+			personaDescription: editedProfile.writing_type.reasoning,
+		};
+		onUpdateProfile(updated);
+		setIsEditing(false);
+	};
 
-  const handleToneToggle = (toneTag: string) => {
-    let nextTones = [...editedProfile.tone];
-    if (nextTones.includes(toneTag)) {
-      if (nextTones.length > 1) {
-        nextTones = nextTones.filter((t) => t !== toneTag);
-      }
-    } else {
-      nextTones.push(toneTag);
-    }
-    setEditedProfile({ ...editedProfile, tone: nextTones });
-  };
+	const handleCancel = () => {
+		setEditedProfile({ ...profile });
+		setIsEditing(false);
+	};
 
-  const handleCtaToggle = (ctaTag: string) => {
-    let nextCtas = [...editedProfile.ctaStyle];
-    if (nextCtas.includes(ctaTag)) {
-      if (nextCtas.length > 1) {
-        nextCtas = nextCtas.filter((c) => c !== ctaTag);
-      }
-    } else {
-      nextCtas.push(ctaTag);
-    }
-    setEditedProfile({ ...editedProfile, ctaStyle: nextCtas });
-  };
+	const renderConfidenceBadge = (score: number) => {
+		const pct = Math.round(score * 100);
+		let colorClass = "bg-emerald-50 border-emerald-100 text-emerald-700";
+		if (score < 0.8 && score >= 0.6) {
+			colorClass = "bg-amber-50 border-amber-100 text-amber-700";
+		} else if (score < 0.6) {
+			colorClass = "bg-rose-50 border-rose-100 text-rose-700";
+		}
 
-  return (
-    <div className="relative max-w-5xl mx-auto px-4 py-8 z-10 animate-fade-in-up">
-      {/* Top Banner / Actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
-        <div>
-          <span className="text-[10px] font-mono tracking-widest uppercase bg-indigo-500/5 px-2.5 py-1 rounded-md border border-indigo-500/20 text-indigo-600 font-semibold">
-            Writing DNA Analysis
-          </span>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800 mt-1">
-            Your Professional Writing DNA
-          </h1>
-        </div>
+		return (
+			<span
+				className={`inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${colorClass}`}
+			>
+				<Cpu className="w-3 h-3 text-indigo-500" />
+				<span>{pct}% AI Confidence</span>
+			</span>
+		);
+	};
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onReset}
-            className="inline-flex items-center justify-center p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition-all text-xs cursor-pointer"
-            title="Recalibrate Profile (Upload Posts)"
-          >
-            <RefreshCw className="w-4 h-4 mr-2 text-indigo-500" />
-            <span>Recalibrate</span>
-          </button>
-          <button
+	return (
+		<div className="relative max-w-5xl mx-auto px-4 py-8 z-10 animate-fade-in-up">
+			{/* Top Banner / Actions */}
+			<div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+				<div>
+					<span className="text-[10px] font-mono tracking-widest uppercase bg-indigo-500/5 px-2.5 py-1 rounded-md border border-indigo-500/20 text-indigo-600 font-semibold">
+						Writing DNA Analysis
+					</span>
+					<h1 className="text-2xl font-bold tracking-tight text-slate-800 mt-1">
+						Your Professional Writing DNA
+					</h1>
+				</div>
+
+				<div className="flex items-center gap-3">
+					<button
+						onClick={onReset}
+						className="inline-flex items-center justify-center p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition-all text-xs cursor-pointer"
+						title="Recalibrate Profile (Upload Posts)"
+					>
+						<RefreshCw className="w-4 h-4 mr-2 text-indigo-500" />
+						<span>Recalibrate</span>
+					</button>
+					{/* <button
             onClick={onLogout}
             className="inline-flex items-center justify-center p-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all text-xs cursor-pointer"
             title="Log Out"
           >
             <LogOut className="w-4 h-4 mr-2" />
             <span>Log Out</span>
-          </button>
-        </div>
-      </div>
+          </button> */}
+				</div>
+			</div>
 
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Persona insight Card - Span 2 Columns */}
-        <div className="glass-card rounded-2xl p-6 md:p-8 md:col-span-2 relative overflow-hidden flex flex-col justify-between">
-          <div className="radial-glow -top-1/4 -right-1/4 w-72 h-72 opacity-50 pointer-events-none" />
-          
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-5 h-5 text-yellow-600" />
-              <span className="text-xs font-semibold text-yellow-700 uppercase tracking-wider">AI Persona Classification</span>
-            </div>
+			{/* Grid Layout */}
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+				{/* Persona insight Card - Span 2 Columns */}
+				<div className="glass-card rounded-2xl p-6 md:p-8 md:col-span-2 relative overflow-hidden flex flex-col justify-between">
+					<div className="radial-glow -top-1/4 -right-1/4 w-72 h-72 opacity-50 pointer-events-none" />
 
-            {isEditing ? (
-              <div className="space-y-4 mb-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="personaName">
-                    Persona Classification Name
-                  </label>
-                  <input
-                    type="text"
-                    id="personaName"
-                    value={editedProfile.personaName}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, personaName: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="personaDescription">
-                    Style Description
-                  </label>
-                  <textarea
-                    id="personaDescription"
-                    value={editedProfile.personaDescription}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, personaDescription: e.target.value })}
-                    className="glass-input w-full h-24 px-3 py-2 rounded-lg text-sm resize-none"
-                  />
-                </div>
-              </div>
-            ) : (
-              <>
-                <h2 className="text-3xl font-black text-slate-800 tracking-tight mb-2">
-                  {profile.personaName}
-                </h2>
-                <p className="text-sm text-slate-600 leading-relaxed max-w-xl">
-                  {profile.personaDescription}
-                </p>
-              </>
-            )}
-          </div>
+					<div>
+						<div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+							<div className="flex items-center gap-2">
+								<Sparkles className="w-5 h-5 text-yellow-600 animate-pulse" />
+								<span className="text-xs font-semibold text-yellow-700 uppercase tracking-wider">
+									AI Persona Classification
+								</span>
+							</div>
+							{!isEditing &&
+								renderConfidenceBadge(profile.writing_type.confidence)}
+						</div>
 
-          <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-6">
-            <span className="text-[11px] font-mono text-indigo-600 font-medium">Tone Fingerprint Verified</span>
-            {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-xs font-medium transition-all cursor-pointer"
-              >
-                <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                Customize Parameters
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleSave}
-                  className="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-600 text-xs font-medium transition-all cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5 mr-1.5" />
-                  Save
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium transition-all cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5 mr-1.5" />
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+						<h2 className="text-3xl font-black text-slate-800 tracking-tight mb-1">
+							{isEditing ? editedProfile.personaName : profile.personaName}
+						</h2>
 
-        {/* 1. Tone card */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Sliders className="w-4 h-4 text-indigo-500" />
-              <h3 className="text-sm font-semibold text-slate-800">Tone & Vibrancy</h3>
-            </div>
+						{isEditing ? (
+							<>
+								<div className="mb-3">
+									<div className="inline-flex items-center gap-1.5">
+										<span className="text-[10px] font-bold text-slate-405 uppercase">Paradigm:</span>
+										<input
+											type="text"
+											value={editedProfile.writing_type.value}
+											onChange={(e) => {
+												const newType = e.target.value;
+												const toneVal = (editedProfile.tone.value || '').toLowerCase();
+												let personaName = 'The Technical Storyteller';
+												const wType = newType.toLowerCase();
+												if (wType.includes('inform') || wType.includes('educat')) {
+													personaName = 'The Authority Educator';
+												} else if (toneVal.includes('bold') || toneVal.includes('assert')) {
+													personaName = 'The Bold Thought Leader';
+												} else if (toneVal.includes('convers') || toneVal.includes('friend')) {
+													personaName = 'The Conversational Networker';
+												}
 
-            {isEditing ? (
-              <div className="space-y-3">
-                <span className="block text-xs font-medium text-slate-500">Select Tone Profiles:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {['Professional', 'Friendly', 'Bold', 'Educational', 'Inspirational', 'Casual', 'Analytical'].map((t) => {
-                    const isSelected = editedProfile.tone.includes(t);
-                    return (
-                      <button
-                        type="button"
-                        key={t}
-                        onClick={() => handleToneToggle(t)}
-                        className={`text-xs px-2.5 py-1 rounded-md border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-700 font-medium'
-                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-700'
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.tone.map((t) => (
-                    <span
-                      key={t}
-                      className="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-500/5 border border-indigo-500/15 text-indigo-600"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                </div>
+												setEditedProfile({
+													...editedProfile,
+													writing_type: { ...editedProfile.writing_type, value: newType },
+													personaName
+												});
+											}}
+											className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[180px]"
+										/>
+									</div>
+								</div>
+								<div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 mt-1 focus-within:border-indigo-300 transition-colors">
+									<span className="block text-[9px] font-mono text-slate-400 uppercase mb-1">AI INSIGHT (EDITABLE)</span>
+									<textarea
+										value={editedProfile.writing_type.reasoning}
+										onChange={(e) =>
+											setEditedProfile({
+												...editedProfile,
+												writing_type: {
+													...editedProfile.writing_type,
+													reasoning: e.target.value,
+												},
+											})
+										}
+										className="w-full text-sm text-slate-650 bg-transparent border-0 focus:ring-0 focus:outline-none resize-none h-20 leading-relaxed"
+									/>
+								</div>
+							</>
+						) : (
+							<>
+								{profile.writing_type?.value && (
+									<div className="mb-3">
+										<span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 uppercase tracking-wider">
+											<Sparkles className="w-3 h-3 text-indigo-500" />
+											<span>Paradigm: {profile.writing_type.value}</span>
+										</span>
+									</div>
+								)}
+								<div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100/50 mt-1">
+									<span className="block text-[9px] font-mono text-slate-400 uppercase mb-1">
+										AI INSIGHT
+									</span>
+									<p className="text-sm text-slate-600 leading-relaxed">
+										{profile.personaDescription}
+									</p>
+								</div>
+							</>
+						)}
+					</div>
 
-                {/* Visual Sliders */}
-                <div className="space-y-3 pt-2">
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                      <span>PROFESSIONAL</span>
-                      <span className="text-indigo-600">80%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                      <div className="h-full bg-indigo-500" style={{ width: '80%' }} />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                      <span>EDUCATIONAL</span>
-                      <span className="text-purple-600">90%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                      <div className="h-full bg-purple-500" style={{ width: '90%' }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 mt-4">Vibe Intensity: High</span>
-        </div>
+					<div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-6">
+						<span className="text-[10px] font-mono text-indigo-600 font-semibold uppercase tracking-wider">
+							DNA Classification Active
+						</span>
+						{!isEditing ? (
+							<button
+								onClick={() => setIsEditing(true)}
+								className="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-xs font-medium transition-all cursor-pointer"
+							>
+								<Edit2 className="w-3.5 h-3.5 mr-1.5" />
+								Customize Parameters
+							</button>
+						) : (
+							<div className="flex items-center gap-2">
+								<button
+									onClick={handleSave}
+									className="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-600 text-xs font-medium transition-all cursor-pointer"
+								>
+									<Check className="w-3.5 h-3.5 mr-1.5" />
+									Save
+								</button>
+								<button
+									onClick={handleCancel}
+									className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium transition-all cursor-pointer"
+								>
+									<X className="w-3.5 h-3.5 mr-1.5" />
+									Cancel
+								</button>
+							</div>
+						)}
+					</div>
+				</div>
 
-        {/* 2. Hook Style card */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <MessageSquare className="w-4 h-4 text-purple-500" />
-              <h3 className="text-sm font-semibold text-slate-800">Opening Hook Pattern</h3>
-            </div>
+				{/* 1. Tone card */}
+				<div className="glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between">
+					<div>
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+							<div className="flex items-center gap-2.5">
+								<Sliders className="w-5 h-5 text-indigo-500" />
+								<h3 className="text-base font-bold text-slate-800">
+									Tone & Voice
+								</h3>
+							</div>
+							{!isEditing && renderConfidenceBadge(profile.tone.confidence)}
+						</div>
 
-            {isEditing ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="hookStyle">
-                    Hook Format Type
-                  </label>
-                  <select
-                    id="hookStyle"
-                    value={editedProfile.hookStyle}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, hookStyle: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-xs"
-                  >
-                    <option value="Question-Based">Question-Based</option>
-                    <option value="Statement-Based">Statement-Based</option>
-                    <option value="Story-Driven">Story-Driven</option>
-                    <option value="Stat-Based">Stat-Based</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="hookExample">
-                    Hook Template Example
-                  </label>
-                  <input
-                    type="text"
-                    id="hookExample"
-                    value={editedProfile.hookExample}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, hookExample: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <span className="text-xs px-2.5 py-1 rounded-md bg-purple-500/5 border border-purple-500/15 text-purple-600 font-semibold">
-                  {profile.hookStyle}
-                </span>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 mt-2">
-                  <span className="block text-[10px] font-mono text-slate-400 mb-1">SAMPLE PREVIEW</span>
-                  <p className="text-xs italic text-slate-600">
-                    "{profile.hookExample}"
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 mt-4">Impression Rate: 92%</span>
-        </div>
+						{isEditing ? (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<input
+										type="text"
+										value={editedProfile.tone.value}
+										onChange={(e) =>
+											setEditedProfile({
+												...editedProfile,
+												tone: { ...editedProfile.tone, value: e.target.value },
+											})
+										}
+										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 capitalize focus:outline-none focus:ring-1 focus:ring-indigo-450 w-full max-w-[200px]"
+									/>
+								</div>
+								<textarea
+									value={editedProfile.tone.reasoning}
+									onChange={(e) =>
+										setEditedProfile({
+											...editedProfile,
+											tone: {
+												...editedProfile.tone,
+												reasoning: e.target.value,
+											},
+										})
+									}
+									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none h-24 mt-2"
+								/>
+							</div>
+						) : (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
+										{profile.tone.value}
+									</span>
+								</div>
+								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
+									"{profile.tone.reasoning}"
+								</p>
+							</div>
+						)}
+					</div>
+					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
+						Primary Tone: {isEditing ? editedProfile.tone.value : profile.tone.value}
+					</span>
+				</div>
 
-        {/* 3. Emoji Usage card */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Smile className="w-4 h-4 text-yellow-600" />
-              <h3 className="text-sm font-semibold text-slate-800">Emoji Density</h3>
-            </div>
+				{/* 2. Hook Style card */}
+				<div className="glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between">
+					<div>
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+							<div className="flex items-center gap-2.5">
+								<MessageSquare className="w-5 h-5 text-purple-500" />
+								<h3 className="text-base font-bold text-slate-800">
+									Opening Hook Style
+								</h3>
+							</div>
+							{!isEditing &&
+								renderConfidenceBadge(profile.hoop_type.confidence)}
+						</div>
 
-            {isEditing ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Density Label
-                  </label>
-                  <select
-                    value={editedProfile.emojiUsage}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, emojiUsage: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-xs"
-                  >
-                    <option value="High">High</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="Low">Low</option>
-                  </select>
-                </div>
+						{isEditing ? (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<input
+										type="text"
+										value={editedProfile.hoop_type.value}
+										onChange={(e) =>
+											setEditedProfile({
+												...editedProfile,
+												hoop_type: {
+													...editedProfile.hoop_type,
+													value: e.target.value,
+												},
+											})
+										}
+										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-250 text-purple-700 capitalize focus:outline-none focus:ring-1 focus:ring-purple-400 w-full max-w-[200px]"
+									/>
+								</div>
+								<textarea
+									value={editedProfile.hoop_type.reasoning}
+									onChange={(e) =>
+										setEditedProfile({
+											...editedProfile,
+											hoop_type: {
+												...editedProfile.hoop_type,
+												reasoning: e.target.value,
+											},
+										})
+									}
+									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-purple-400 resize-none h-24 mt-2"
+								/>
+							</div>
+						) : (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-purple-700 capitalize">
+										{profile.hoop_type.value}
+									</span>
+								</div>
+								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
+									"{profile.hoop_type.reasoning}"
+								</p>
+							</div>
+						)}
+					</div>
+					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
+						Hook Style: {isEditing ? editedProfile.hoop_type.value : profile.hoop_type.value}
+					</span>
+				</div>
 
-                <div>
-                  <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
-                    <span>Percentage</span>
-                    <span>{editedProfile.emojiPercent}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={editedProfile.emojiPercent}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, emojiPercent: parseInt(e.target.value) })}
-                    className="w-full accent-purple-500 cursor-pointer"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-5">
-                {/* Circular indicator */}
-                <div className="relative w-18 h-18 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="36" cy="36" r="30" stroke="rgba(0,0,0,0.05)" strokeWidth="6" fill="transparent" />
-                    <circle
-                      cx="36"
-                      cy="36"
-                      r="30"
-                      stroke="#a855f7"
-                      strokeWidth="6"
-                      fill="transparent"
-                      strokeDasharray="188.4"
-                      strokeDashoffset={188.4 - (188.4 * profile.emojiPercent) / 100}
-                      className="transition-all duration-500"
-                    />
-                  </svg>
-                  <span className="absolute text-xs font-bold text-slate-800">{profile.emojiPercent}%</span>
-                </div>
+				{/* 3. Core Niches & Topics */}
+				<div className="glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between">
+					<div>
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+							<div className="flex items-center gap-2.5">
+								<Target className="w-5 h-5 text-amber-500" />
+								<h3 className="text-base font-bold text-slate-800">
+									Core Niches & Topics
+								</h3>
+							</div>
+							{!isEditing && renderConfidenceBadge(profile.topic.confidence)}
+						</div>
 
-                <div>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-yellow-500/5 border border-yellow-500/15 text-yellow-700 block mb-1 w-max">
-                    {profile.emojiUsage}
-                  </span>
-                  <p className="text-[11px] text-slate-500">
-                    Calculated emoji insertion per paragraph.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 mt-4">Type: Engagement Optimizer</span>
-        </div>
+						{isEditing ? (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<input
+										type="text"
+										value={editedProfile.topic.value.join(", ")}
+										onChange={(e) =>
+											setEditedProfile({
+												...editedProfile,
+												topic: {
+													...editedProfile.topic,
+													value: e.target.value.split(",").map((t) => t.trim()),
+												},
+											})
+										}
+										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-250 text-amber-700 focus:outline-none focus:ring-1 focus:ring-amber-400 w-full max-w-[280px]"
+									/>
+								</div>
+								<textarea
+									value={editedProfile.topic.reasoning}
+									onChange={(e) =>
+										setEditedProfile({
+											...editedProfile,
+											topic: {
+												...editedProfile.topic,
+												reasoning: e.target.value,
+											},
+										})
+									}
+									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none h-24 mt-2"
+								/>
+							</div>
+						) : (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									{profile.topic.value.map((topicItem, idx) => (
+										<span
+											key={idx}
+											className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 capitalize"
+										>
+											{topicItem}
+										</span>
+									))}
+								</div>
+								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
+									"{profile.topic.reasoning}"
+								</p>
+							</div>
+						)}
+					</div>
+					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
+						Topics Detected: {isEditing ? editedProfile.topic.value.length : profile.topic.value.length}
+					</span>
+				</div>
 
-        {/* 4. Average Length & Structure card */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-              <h3 className="text-sm font-semibold text-slate-800">Size & Structure</h3>
-            </div>
+				{/* 4. Average Word Count */}
+				<div className="glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between">
+					<div>
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+							<div className="flex items-center gap-2.5">
+								<FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+								<h3 className="text-base font-bold text-slate-800">
+									Average Word Count
+								</h3>
+							</div>
+							{!isEditing &&
+								renderConfidenceBadge(profile.avg_words.confidence)}
+						</div>
 
-            {isEditing ? (
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
-                    <span>Average Length (Words)</span>
-                    <span>{editedProfile.avgLength} words</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="50"
-                    max="500"
-                    step="10"
-                    value={editedProfile.avgLength}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, avgLength: parseInt(e.target.value) })}
-                    className="w-full accent-indigo-500 cursor-pointer"
-                  />
-                </div>
+						{isEditing ? (
+							<div className="space-y-3">
+								<div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
+									<span>Target Sizing</span>
+									<div className="flex items-center gap-1">
+										<input
+											type="number"
+											value={editedProfile.avg_words.value}
+											onChange={(e) =>
+												setEditedProfile({
+													...editedProfile,
+													avg_words: {
+														...editedProfile.avg_words,
+														value: parseInt(e.target.value) || 200,
+													},
+												})
+											}
+											className="text-xs font-bold px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-250 text-emerald-700 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 w-[80px]"
+										/>
+										<span className="text-xs text-slate-500">words</span>
+									</div>
+								</div>
+								<div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 mt-2">
+									<div
+										className="h-full bg-emerald-500 transition-all duration-300"
+										style={{
+											width: `${Math.min((editedProfile.avg_words.value / 400) * 100, 100)}%`,
+										}}
+									/>
+								</div>
+								<textarea
+									value={editedProfile.avg_words.reasoning}
+									onChange={(e) =>
+										setEditedProfile({
+											...editedProfile,
+											avg_words: {
+												...editedProfile.avg_words,
+												reasoning: e.target.value,
+											},
+										})
+									}
+									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none h-24 mt-2"
+								/>
+							</div>
+						) : (
+							<div className="space-y-3">
+								<div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
+									<span>Target Sizing</span>
+									<span className="text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg font-mono">
+										{profile.avg_words.value} words
+									</span>
+								</div>
+								<div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+									<div
+										className="h-full bg-emerald-500"
+										style={{
+											width: `${Math.min((profile.avg_words.value / 400) * 100, 100)}%`,
+										}}
+									/>
+								</div>
+								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
+									"{profile.avg_words.reasoning}"
+								</p>
+							</div>
+						)}
+					</div>
+					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
+						Word Count: {isEditing ? editedProfile.avg_words.value : profile.avg_words.value} words
+					</span>
+				</div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="sentenceStructure">
-                    Sentence Structure
-                  </label>
-                  <select
-                    id="sentenceStructure"
-                    value={editedProfile.sentenceStructure}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, sentenceStructure: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-xs"
-                  >
-                    <option value="Short & Punchy">Short & Punchy</option>
-                    <option value="Conversational">Conversational</option>
-                    <option value="Complex & Structured">Complex & Structured</option>
-                  </select>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium text-slate-600">
-                    <span>Average Length</span>
-                    <span className="text-emerald-600 font-semibold">{profile.avgLength} words</span>
-                  </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                    <div
-                      className="h-full bg-emerald-600"
-                      style={{ width: `${Math.min((profile.avgLength / 400) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-slate-500 pt-0.5">Ideal for reader retention bounds.</p>
-                </div>
+				{/* 5. Emoji Frequency card */}
+				<div className="glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between">
+					<div>
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+							<div className="flex items-center gap-2.5">
+								<Smile className="w-5 h-5 text-purple-500" />
+								<h3 className="text-base font-bold text-slate-800">
+									Emoji Frequency
+								</h3>
+							</div>
+							{!isEditing &&
+								renderConfidenceBadge(profile.emoji_frequency.confidence)}
+						</div>
 
-                <div>
-                  <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1">Syntax Pattern</span>
-                  <span className="text-xs text-slate-700 font-semibold">{profile.sentenceStructure}</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 mt-4">Formatting Type: Segmented</span>
-        </div>
+						{isEditing ? (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<select
+										value={editedProfile.emoji_frequency.value}
+										onChange={(e) =>
+											setEditedProfile({
+												...editedProfile,
+												emoji_frequency: {
+													...editedProfile.emoji_frequency,
+													value: e.target.value,
+												},
+											})
+										}
+										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-755 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+									>
+										<option value="high">High Frequency</option>
+										<option value="moderate">Moderate Frequency</option>
+										<option value="low">Low Frequency</option>
+									</select>
+								</div>
+								<textarea
+									value={editedProfile.emoji_frequency.reasoning}
+									onChange={(e) =>
+										setEditedProfile({
+											...editedProfile,
+											emoji_frequency: {
+												...editedProfile.emoji_frequency,
+												reasoning: e.target.value,
+											},
+										})
+									}
+									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none h-24 mt-2"
+								/>
+							</div>
+						) : (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
+										{profile.emoji_frequency.value} Frequency
+									</span>
+								</div>
+								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
+									"{profile.emoji_frequency.reasoning}"
+								</p>
+							</div>
+						)}
+					</div>
+					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
+						Emoji Level: {isEditing ? editedProfile.emoji_frequency.value : profile.emoji_frequency.value}
+					</span>
+				</div>
 
-        {/* 5. CTA Style & Formatting card */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <LayoutList className="w-4 h-4 text-cyan-600" />
-              <h3 className="text-sm font-semibold text-slate-800">CTAs & Layouts</h3>
-            </div>
+				{/* 6. Paragraph spacing card */}
+				<div className="glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between">
+					<div>
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+							<div className="flex items-center gap-2.5">
+								<LayoutList className="w-5 h-5 text-cyan-600" />
+								<h3 className="text-base font-bold text-slate-800">
+									Paragraph Structure
+								</h3>
+							</div>
+							{!isEditing &&
+								renderConfidenceBadge(profile.paragraph_size.confidence)}
+						</div>
 
-            {isEditing ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <span className="block text-xs font-medium text-slate-600">Preferred CTA Styles:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {['Engagement Question', 'Direct Link', 'Resource Offer', 'Interactive Poll', 'Value Pitch'].map((c) => {
-                      const isSelected = editedProfile.ctaStyle.includes(c);
-                      return (
-                        <button
-                          type="button"
-                          key={c}
-                          onClick={() => handleCtaToggle(c)}
-                          className={`text-[10px] px-2.5 py-1 rounded-md border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-700 font-medium'
-                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          {c}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+						{isEditing ? (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<select
+										value={editedProfile.paragraph_size.value}
+										onChange={(e) =>
+											setEditedProfile({
+												...editedProfile,
+												paragraph_size: {
+													...editedProfile.paragraph_size,
+													value: e.target.value,
+												},
+											})
+										}
+										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-755 focus:outline-none focus:ring-1 focus:ring-cyan-400 cursor-pointer"
+									>
+										<option value="short">Short paragraphs</option>
+										<option value="medium">Medium paragraphs</option>
+										<option value="long">Long paragraphs</option>
+									</select>
+								</div>
+								<textarea
+									value={editedProfile.paragraph_size.reasoning}
+									onChange={(e) =>
+										setEditedProfile({
+											...editedProfile,
+											paragraph_size: {
+												...editedProfile.paragraph_size,
+												reasoning: e.target.value,
+											},
+										})
+									}
+									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-400 resize-none h-24 mt-2"
+								/>
+							</div>
+						) : (
+							<div className="space-y-3">
+								<div className="flex flex-wrap gap-1.5">
+									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700 capitalize">
+										{profile.paragraph_size.value} paragraphs
+									</span>
+								</div>
+								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
+									"{profile.paragraph_size.reasoning}"
+								</p>
+							</div>
+						)}
+					</div>
+					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
+						Paragraph Size: {isEditing ? editedProfile.paragraph_size.value : profile.paragraph_size.value}
+					</span>
+				</div>
+			</div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="formattingStyle">
-                    Spacing & Formatting
-                  </label>
-                  <input
-                    type="text"
-                    id="formattingStyle"
-                    value={editedProfile.formattingStyle}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, formattingStyle: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest">Typical Outro Call to Actions</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {profile.ctaStyle.map((c) => (
-                      <span
-                        key={c}
-                        className="text-[10px] font-semibold px-2 py-0.5 rounded bg-cyan-50 border border-cyan-150 text-cyan-600"
-                      >
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1">Whitespace layout</span>
-                  <p className="text-xs text-slate-600 leading-relaxed">{profile.formattingStyle}</p>
-                </div>
-              </div>
-            )}
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 mt-4">Outro Style: Interactive</span>
-        </div>
-
-        {/* 6. Vocabulary Complexity & Storytelling Pattern */}
-        <div className="glass-card rounded-2xl p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-purple-500" />
-              <h3 className="text-sm font-semibold text-slate-800">Stylistic DNA</h3>
-            </div>
-
-            {isEditing ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="vocabularyComplexity">
-                    Vocabulary Range
-                  </label>
-                  <select
-                    id="vocabularyComplexity"
-                    value={editedProfile.vocabularyComplexity}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, vocabularyComplexity: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-xs"
-                  >
-                    <option value="Conversational & Direct">Conversational & Direct</option>
-                    <option value="Technical & Analytical">Technical & Analytical</option>
-                    <option value="Advanced & Formal">Advanced & Formal</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1" htmlFor="storytellingPattern">
-                    Storytelling Method
-                  </label>
-                  <select
-                    id="storytellingPattern"
-                    value={editedProfile.storytellingPattern}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, storytellingPattern: e.target.value })}
-                    className="glass-input w-full px-3 py-2 rounded-lg text-xs"
-                  >
-                    <option value="Before-After-Bridge">Before-After-Bridge</option>
-                    <option value="Hero's Journey (Short)">Hero's Journey (Short)</option>
-                    <option value="Hook-Value-CTA Grid">Hook-Value-CTA Grid</option>
-                    <option value="Question & Answer">Question & Answer</option>
-                  </select>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1">Vocabulary Density</span>
-                  <span className="text-xs text-slate-700 font-semibold">{profile.vocabularyComplexity}</span>
-                </div>
-
-                <div>
-                  <span className="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-1">Storytelling Paradigm</span>
-                  <span className="text-xs text-slate-700 font-semibold">{profile.storytellingPattern}</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 mt-4">Model ID: lpg-v1.4</span>
-        </div>
-      </div>
-
-      {/* Trigger Button to Proceed to Topic Generator */}
-      <div className="flex justify-center pt-2">
-        <button
-          onClick={onProceedToTopics}
-          disabled={isEditing}
-          className={`group inline-flex items-center justify-center py-4 px-10 rounded-2xl font-bold text-base transition-all duration-300 shadow-xl border cursor-pointer ${
-            isEditing
-              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed shadow-none'
-              : 'bg-gradient-to-r from-indigo-500 via-purple-600 to-cyan-500 hover:from-indigo-600 hover:to-purple-700 text-white shadow-purple-600/10 hover:shadow-purple-600/20 border-purple-500/20'
-          }`}
-        >
-          <span>Unlock Content Ideas (Generate Topics)</span>
-          <Sparkles className="w-5 h-5 ml-2 text-yellow-300 group-hover:animate-bounce" />
-        </button>
-      </div>
-    </div>
-  );
+			{/* Trigger Button to Proceed to Topic Generator */}
+			<div className="flex justify-center pt-2">
+				<button
+					onClick={onProceedToTopics}
+					disabled={isEditing}
+					className={`group inline-flex items-center justify-center py-4 px-10 rounded-2xl font-bold text-base transition-all duration-300 shadow-xl border cursor-pointer ${
+						isEditing
+							? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed shadow-none"
+							: "bg-gradient-to-r from-indigo-500 via-purple-600 to-cyan-500 hover:from-indigo-600 hover:to-purple-700 text-white shadow-purple-600/10 hover:shadow-purple-600/20 border-purple-500/20"
+					}`}
+				>
+					<span>Unlock Content Ideas (Generate Topics)</span>
+					<Sparkles className="w-5 h-5 ml-2 text-yellow-300 group-hover:animate-bounce" />
+				</button>
+			</div>
+		</div>
+	);
 }

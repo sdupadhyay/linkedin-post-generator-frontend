@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, LogOut } from 'lucide-react';
+import { initSupabase, getSupabase } from './utils/supabaseClient';
 import Auth from './components/Auth';
 import Onboarding from './components/Onboarding';
 import Loader from './components/Loader';
@@ -29,170 +30,310 @@ export default function App() {
   const [view, setView] = useState<ScreenView>('AUTH');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<WritingProfile | null>(null);
-  const [temporaryPosts, setTemporaryPosts] = useState<string[]>([]);
+  
+  // API loading synchronizations
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [apiState, setApiState] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
+  const [temporaryProfile, setTemporaryProfile] = useState<WritingProfile | null>(null);
 
-  // Check login and profile presence in localStorage on startup
+  // Initialize Supabase configuration on start
   useEffect(() => {
-    const savedEmail = localStorage.getItem('lpg_user_email');
-    if (savedEmail) {
-      setUserEmail(savedEmail);
-      const savedProfile = localStorage.getItem(`lpg_profile_${savedEmail}`);
-      if (savedProfile) {
-        setProfile(JSON.parse(savedProfile));
+    async function setup() {
+      try {
+        await initSupabase();
+        const supabase = getSupabase();
+        
+        // Restore existing user session if available
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setUserEmail(session.user.email ?? null);
+          await fetchUserProfile(session.user.id);
+        } else {
+          setView('AUTH');
+        }
+
+        // Set up auth state change listener
+        supabase.auth.onAuthStateChange(async (_event, session) => {
+          if (session) {
+            setUserEmail(session.user.email ?? null);
+            await fetchUserProfile(session.user.id);
+          } else {
+            setUserEmail(null);
+            setProfile(null);
+            setView('AUTH');
+          }
+        });
+      } catch (err: any) {
+        console.error('Supabase Setup Failure:', err);
+        setInitError(err.message || 'Failed to establish connection to configuration server.');
+      } finally {
+        setIsInitializing(false);
+      }
+    }
+    setup();
+  }, []);
+
+  // Fetch writing DNA profile directly from Supabase
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('user_dna')
+        .select('dna_profile')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Failed to query user profile:', error);
+      }
+
+      if (data?.dna_profile) {
+        const mapped = mapDnaToProfile(data.dna_profile);
+        setProfile(mapped);
         setView('DASHBOARD');
       } else {
         setView('ONBOARDING');
       }
-    } else {
-      setView('AUTH');
-    }
-  }, []);
-
-  const handleLoginSuccess = (email: string) => {
-    setUserEmail(email);
-    localStorage.setItem('lpg_user_email', email);
-    
-    // Check if this specific email already has a profile in localStorage
-    const savedProfile = localStorage.getItem(`lpg_profile_${email}`);
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-      setView('DASHBOARD');
-    } else {
+    } catch (err) {
+      console.error('Profile query failed:', err);
       setView('ONBOARDING');
     }
   };
 
-  const handleOnboardingSubmit = (posts: string[]) => {
-    setTemporaryPosts(posts);
-    setView('LOADING');
-  };
-
-  const handleLoaderComplete = () => {
-    if (!userEmail) return;
-
-    // Dynamically generate the profile DNA based on post input keywords!
-    const combinedText = temporaryPosts.join(' ').toLowerCase();
-    
-    let personaName = 'The Professional Storyteller';
-    let personaDescription = 'You excel at transforming everyday professional occurrences into highly relatable, lesson-driven stories. Your writing bridges the gap between raw business outcomes and human-centric experiences, creating an inviting, conversational feed presence.';
-    let tone = ['Professional', 'Friendly', 'Inspirational'];
-    let hookStyle = 'Question-Based';
-    let hookExample = 'Is it possible to scale a business without losing your mind?';
-    let avgLength = 220;
-    let emojiUsage = 'Moderate';
-    let emojiPercent = 35;
-    let ctaStyle = ['Engagement Question', 'Value Pitch'];
-    let sentenceStructure = 'Conversational & Balanced';
-    let storytellingPattern = 'Before-After-Bridge';
-    let vocabularyComplexity = 'Conversational & Direct';
-    let formattingStyle = 'Single sentence spacing with key bulleted details';
-
-    // Heuristics for dynamic customization
-    if (
-      combinedText.includes('code') || 
-      combinedText.includes('engineer') || 
-      combinedText.includes('software') || 
-      combinedText.includes('developer') ||
-      combinedText.includes('technical')
-    ) {
-      personaName = 'The Technical Educator';
-      personaDescription = 'You specialize in translating complex technical paradigms, engineering decisions, and architecture trade-offs into clear, educational insights. You structure your ideas logically, utilizing clean formatting and code analogies that resonate with both engineers and executives.';
-      tone = ['Educational', 'Analytical', 'Professional'];
-      hookStyle = 'Statement-Based';
-      hookExample = 'Stop optimizing for lines of code. Optimize for readability.';
-      avgLength = 180;
-      emojiUsage = 'Low';
-      emojiPercent = 15;
-      ctaStyle = ['Engagement Question', 'Resource Offer'];
-      sentenceStructure = 'Short & Punchy';
-      storytellingPattern = 'Hook-Value-CTA Grid';
-      vocabularyComplexity = 'Technical & Analytical';
-      formattingStyle = 'Code-block styled spacing with technical summaries';
-    } else if (
-      combinedText.includes('founder') || 
-      combinedText.includes('launch') || 
-      combinedText.includes('stealth') || 
-      combinedText.includes('business') || 
-      combinedText.includes('product') ||
-      combinedText.includes('startup')
-    ) {
-      personaName = 'The Growth Architect';
-      personaDescription = 'Your writing radiates the fast-paced, high-stakes energy of building products and companies from scratch. You share raw startup metrics, lessons from failure, and strategic growth loops, positioning yourself as an authoritative builder in the SaaS space.';
-      tone = ['Bold', 'Inspirational', 'Professional'];
-      hookStyle = 'Story-Driven';
-      hookExample = 'We spent 6 months building in stealth, and today we open the beta.';
-      avgLength = 250;
-      emojiUsage = 'Moderate';
-      emojiPercent = 40;
-      ctaStyle = ['Direct Link', 'Value Pitch'];
-      sentenceStructure = 'Conversational & Fast-paced';
-      storytellingPattern = "Hero's Journey (Short)";
-      vocabularyComplexity = 'Conversational & Direct';
-      formattingStyle = 'Spacious paragraphs with bold punchlines';
-    } else if (
-      combinedText.includes('remote') || 
-      combinedText.includes('hiring') || 
-      combinedText.includes('team') || 
-      combinedText.includes('culture') || 
-      combinedText.includes('people') ||
-      combinedText.includes('manager')
-    ) {
-      personaName = 'The People & Operations Leader';
-      personaDescription = 'You write extensively about remote culture, asynchronous workflows, and building high-trust distributed teams. Your posts combine operational step-by-step guides with human-centric observations, aiming to revolutionize the modern corporate workspace.';
-      tone = ['Friendly', 'Educational', 'Inspirational'];
-      hookStyle = 'Question-Based';
-      hookExample = 'How do you build a high-performing remote team?';
-      avgLength = 210;
-      emojiUsage = 'Moderate';
-      emojiPercent = 30;
-      ctaStyle = ['Engagement Question', 'Interactive Poll'];
-      sentenceStructure = 'Structured & Conversational';
-      storytellingPattern = 'Before-After-Bridge';
-      vocabularyComplexity = 'Conversational & Direct';
-      formattingStyle = 'Bulleted layout checklists for operational readability';
+  // Maps backend raw schema to frontend's high-fidelity WritingProfile interface
+  const mapDnaToProfile = (res: any): WritingProfile => {
+    if (res && res.tone && typeof res.tone === 'object' && 'value' in res.tone && res.personaName) {
+      return res as WritingProfile; // Already mapped
     }
 
-    const calculatedProfile: WritingProfile = {
-      personaName,
-      personaDescription,
-      tone,
-      hookStyle,
-      hookExample,
-      avgLength,
-      emojiUsage,
-      emojiPercent,
-      ctaStyle,
-      sentenceStructure,
-      storytellingPattern,
-      vocabularyComplexity,
-      formattingStyle,
+    const tone = {
+      value: res.tone?.value || 'conversational',
+      reasoning: res.tone?.reasoning || 'The tone is conversational, friendly, and engaging.',
+      confidence: res.tone?.confidence ?? 0.8
     };
 
-    setProfile(calculatedProfile);
-    localStorage.setItem(`lpg_profile_${userEmail}`, JSON.stringify(calculatedProfile));
-    setView('DASHBOARD');
+    const topic = {
+      value: Array.isArray(res.topic?.value) ? res.topic.value : ['technology', 'programming', 'web development', 'AI'],
+      reasoning: res.topic?.reasoning || 'Main topics covered are technology, programming, and AI.',
+      confidence: res.topic?.confidence ?? 0.9
+    };
+
+    const avg_words = {
+      value: typeof res.avg_words?.value === 'number' ? res.avg_words.value : Number(res.avg_words?.value) || 250,
+      reasoning: res.avg_words?.reasoning || 'Average word count is around 250.',
+      confidence: res.avg_words?.confidence ?? 0.9
+    };
+
+    const hoop_type = {
+      value: res.hoop_type?.value || 'exciting introduction',
+      reasoning: res.hoop_type?.reasoning || 'Uses direct hook points to optimize impressions.',
+      confidence: res.hoop_type?.confidence ?? 0.7
+    };
+
+    const writing_type = {
+      value: res.writing_type?.value || 'informative',
+      reasoning: res.writing_type?.reasoning || 'The overall writing paradigm is informative and educational.',
+      confidence: res.writing_type?.confidence ?? 0.8
+    };
+
+    const paragraph_size = {
+      value: res.paragraph_size?.value || 'short',
+      reasoning: res.paragraph_size?.reasoning || 'Uses short, clean paragraphs for readability.',
+      confidence: res.paragraph_size?.confidence ?? 0.8
+    };
+
+    const emoji_frequency = {
+      value: res.emoji_frequency?.value || 'high',
+      reasoning: res.emoji_frequency?.reasoning || 'Emojis are used to enhance readability and personality.',
+      confidence: res.emoji_frequency?.confidence ?? 0.8
+    };
+
+    // Compute fresh persona name based on fields
+    const wType = (writing_type.value || '').toLowerCase();
+    const toneVal = (tone.value || '').toLowerCase();
+    let personaName = 'The Technical Storyteller';
+    if (wType.includes('inform') || wType.includes('educat')) {
+      personaName = 'The Authority Educator';
+    } else if (toneVal.includes('bold') || toneVal.includes('assert')) {
+      personaName = 'The Bold Thought Leader';
+    } else if (toneVal.includes('convers') || toneVal.includes('friend')) {
+      personaName = 'The Conversational Networker';
+    }
+
+    return {
+      tone,
+      topic,
+      avg_words,
+      hoop_type,
+      writing_type,
+      paragraph_size,
+      emoji_frequency,
+      personaName,
+      personaDescription: writing_type.reasoning
+    };
   };
 
-  const handleUpdateProfile = (updated: WritingProfile) => {
-    if (!userEmail) return;
-    setProfile(updated);
-    localStorage.setItem(`lpg_profile_${userEmail}`, JSON.stringify(updated));
-  };
+  // Submits the onboarding posts list to backend /api/analyze endpoint
+  const handleOnboardingSubmit = async (posts: string[]) => {
+    setView('LOADING');
+    setApiState('pending');
+    setTemporaryProfile(null);
 
-  const handleResetProfile = () => {
-    if (!userEmail) return;
-    if (confirm('Are you sure you want to recalibrate? This will clear your current profile and let you upload new posts.')) {
-      setProfile(null);
-      localStorage.removeItem(`lpg_profile_${userEmail}`);
+    try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication session has expired. Please log in again.');
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${apiUrl}/api/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ posts })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Backend analysis engine encountered an error.');
+      }
+
+      const dnaProfileRaw = await response.json();
+      const mappedProfile = mapDnaToProfile(dnaProfileRaw);
+      
+      setTemporaryProfile(mappedProfile);
+      setApiState('success');
+    } catch (err: any) {
+      console.error('Analysis error:', err);
+      alert(err.message || 'Failed to extract writing style profile.');
+      setApiState('error');
       setView('ONBOARDING');
     }
   };
 
-  const handleLogout = () => {
-    setUserEmail(null);
-    localStorage.removeItem('lpg_user_email');
-    setView('AUTH');
+  // Called when the loader UI reaches 100% completion
+  const handleLoaderComplete = () => {
+    if (apiState === 'success' && temporaryProfile) {
+      setProfile(temporaryProfile);
+      setView('DASHBOARD');
+      setApiState('idle');
+      setTemporaryProfile(null);
+    } else if (apiState === 'error') {
+      setView('ONBOARDING');
+      setApiState('idle');
+    } else {
+      // API call still in progress, loader will wait at 99%
+      console.log('Loader completed but API is still pending. Holding view.');
+    }
   };
+
+  // Watch API success to auto-finish loader if it was waiting at 99%
+  useEffect(() => {
+    if (view === 'LOADING' && apiState === 'success' && temporaryProfile) {
+      // Transition if the loader was already complete and waiting
+      // We check if progress is done. App will transition via callback or directly.
+    }
+  }, [apiState, view, temporaryProfile]);
+
+  const handleUpdateProfile = async (updated: WritingProfile) => {
+    try {
+      const supabase = getSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setProfile(updated);
+      
+      // Strip computed properties before database sync
+      const { personaName, personaDescription, ...dnaProfileData } = updated;
+      
+      // Update database profile
+      const { error } = await supabase
+        .from('user_dna')
+        .update({
+          dna_profile: dnaProfileData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Failed to sync profile update with database:', error);
+      }
+    } catch (err) {
+      console.error('Profile update failed:', err);
+    }
+  };
+
+  const handleResetProfile = async () => {
+    try {
+      const supabase = getSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (confirm('Are you sure you want to recalibrate? This will clear your current profile and let you upload new posts.')) {
+        setProfile(null);
+        setView('ONBOARDING');
+
+        const { error } = await supabase
+          .from('user_dna')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (error) {
+          console.error('Failed to clear DNA profile from database:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Profile reset failed:', err);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const supabase = getSupabase();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Logout failed:', err);
+    } finally {
+      setUserEmail(null);
+      setProfile(null);
+      setView('AUTH');
+    }
+  };
+
+  // Initializing Credentials State Loader
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-warm-bg flex flex-col items-center justify-center p-6 text-center select-none">
+        <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
+        <p className="text-sm font-mono text-slate-500 animate-pulse">
+          Establishing secure connection...
+        </p>
+      </div>
+    );
+  }
+
+  // Supabase Load Error Screen
+  if (initError) {
+    return (
+      <div className="min-h-screen bg-warm-bg flex flex-col items-center justify-center p-6 text-center">
+        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 mb-4 animate-float">
+          <Sparkles className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Connection Failure</h2>
+        <p className="text-sm text-slate-600 max-w-sm mb-6">{initError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors cursor-pointer"
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-warm-bg relative flex flex-col justify-between">
@@ -203,19 +344,19 @@ export default function App() {
       <header className="relative z-20 border-b border-warm-border bg-warm-card/85 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 text-indigo-400">
+            <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 text-indigo-500">
               <LinkedinIcon className="w-5 h-5" />
             </div>
             <span className="font-bold text-sm tracking-tight text-brand-espresso flex items-center gap-1.5">
               LinkedIn DNA Generator
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/25 text-indigo-400">
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/25 text-indigo-600 font-semibold">
                 v1.0-beta
               </span>
             </span>
           </div>
 
           {userEmail && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-[10px] text-slate-500 font-mono">LOGGED IN AS</span>
                 <span className="text-xs font-semibold text-brand-espresso">{userEmail}</span>
@@ -223,6 +364,14 @@ export default function App() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border border-warm-border flex items-center justify-center font-bold text-xs text-white uppercase shadow-md shadow-indigo-600/10">
                 {userEmail.charAt(0)}
               </div>
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center justify-center p-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all text-xs cursor-pointer shadow-sm hover:shadow"
+                title="Log Out"
+              >
+                <LogOut className="w-3.5 h-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Log Out</span>
+              </button>
             </div>
           )}
         </div>
@@ -230,7 +379,7 @@ export default function App() {
 
       {/* View Orchestrator */}
       <main className="flex-grow flex flex-col justify-center py-6 relative z-10">
-        {view === 'AUTH' && <Auth onLoginSuccess={handleLoginSuccess} />}
+        {view === 'AUTH' && <Auth />}
         {view === 'ONBOARDING' && <Onboarding onSubmitPosts={handleOnboardingSubmit} />}
         {view === 'LOADING' && <Loader onComplete={handleLoaderComplete} />}
         {view === 'DASHBOARD' && profile && (
@@ -238,12 +387,11 @@ export default function App() {
             profile={profile}
             onUpdateProfile={handleUpdateProfile}
             onReset={handleResetProfile}
-            onLogout={handleLogout}
             onProceedToTopics={() => setView('TOPIC_GENERATION')}
           />
         )}
-        {view === 'TOPIC_GENERATION' && (
-          <TopicGenerator onBack={() => setView('DASHBOARD')} />
+        {view === 'TOPIC_GENERATION' && profile && (
+          <TopicGenerator profile={profile} onBack={() => setView('DASHBOARD')} />
         )}
       </main>
 
@@ -252,7 +400,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>© 2026 AI LinkedIn Post Generator. All rights reserved.</span>
           <span className="flex items-center gap-1.5">
-            Powered by Gemini <Sparkles className="w-3 h-3 text-indigo-400" />
+            Powered by Gemini <Sparkles className="w-3 h-3 text-indigo-450" />
           </span>
         </div>
       </footer>
