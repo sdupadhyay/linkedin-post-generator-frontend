@@ -145,82 +145,73 @@ export default function ProfileDashboard({
 									AI Persona Classification
 								</span>
 							</div>
-							{!isEditing &&
-								renderConfidenceBadge(profile.writing_type.confidence)}
+							{renderConfidenceBadge(isEditing ? editedProfile.writing_type.confidence : profile.writing_type.confidence)}
 						</div>
 
 						<h2 className="text-3xl font-black text-slate-800 tracking-tight mb-1">
 							{isEditing ? editedProfile.personaName : profile.personaName}
 						</h2>
 
-						{isEditing ? (
-							<>
-								<div className="mb-3">
-									<div className="inline-flex items-center gap-1.5">
-										<span className="text-[10px] font-bold text-slate-405 uppercase">Paradigm:</span>
-										<input
-											type="text"
-											value={editedProfile.writing_type.value}
-											onChange={(e) => {
-												const newType = e.target.value;
-												const toneVal = (editedProfile.tone.value || '').toLowerCase();
-												let personaName = 'The Technical Storyteller';
-												const wType = newType.toLowerCase();
-												if (wType.includes('inform') || wType.includes('educat')) {
-													personaName = 'The Authority Educator';
-												} else if (toneVal.includes('bold') || toneVal.includes('assert')) {
-													personaName = 'The Bold Thought Leader';
-												} else if (toneVal.includes('convers') || toneVal.includes('friend')) {
-													personaName = 'The Conversational Networker';
-												}
-
-												setEditedProfile({
-													...editedProfile,
-													writing_type: { ...editedProfile.writing_type, value: newType },
-													personaName
-												});
-											}}
-											className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 uppercase tracking-wider focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[180px]"
-										/>
-									</div>
-								</div>
-								<div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 mt-1 focus-within:border-indigo-300 transition-colors">
-									<span className="block text-[9px] font-mono text-slate-400 uppercase mb-1">AI INSIGHT (EDITABLE)</span>
-									<textarea
-										value={editedProfile.writing_type.reasoning}
-										onChange={(e) =>
-											setEditedProfile({
-												...editedProfile,
-												writing_type: {
-													...editedProfile.writing_type,
-													reasoning: e.target.value,
-												},
-											})
+						<div className="mb-3">
+							<span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 uppercase tracking-wider">
+								<Sparkles className="w-3 h-3 text-indigo-500" />
+								<span>Paradigm: </span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
+										const newType = e.currentTarget.innerText.trim();
+										const toneVal = (editedProfile.tone.value || '').toLowerCase();
+										let personaName = 'The Technical Storyteller';
+										const wType = newType.toLowerCase();
+										if (wType.includes('inform') || wType.includes('educat')) {
+											personaName = 'The Authority Educator';
+										} else if (toneVal.includes('bold') || toneVal.includes('assert')) {
+											personaName = 'The Bold Thought Leader';
+										} else if (toneVal.includes('convers') || toneVal.includes('friend')) {
+											personaName = 'The Conversational Networker';
 										}
-										className="w-full text-sm text-slate-650 bg-transparent border-0 focus:ring-0 focus:outline-none resize-none h-20 leading-relaxed"
-									/>
-								</div>
-							</>
-						) : (
-							<>
-								{profile.writing_type?.value && (
-									<div className="mb-3">
-										<span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 uppercase tracking-wider">
-											<Sparkles className="w-3 h-3 text-indigo-500" />
-											<span>Paradigm: {profile.writing_type.value}</span>
-										</span>
-									</div>
-								)}
-								<div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100/50 mt-1">
-									<span className="block text-[9px] font-mono text-slate-400 uppercase mb-1">
-										AI INSIGHT
-									</span>
-									<p className="text-sm text-slate-600 leading-relaxed">
-										{profile.personaDescription}
-									</p>
-								</div>
-							</>
-						)}
+
+										setEditedProfile({
+											...editedProfile,
+											writing_type: { ...editedProfile.writing_type, value: newType },
+											personaName
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 ${isEditing ? 'focus:bg-indigo-100/50 cursor-text hover:bg-indigo-100/30' : ''}`}
+								>
+									{isEditing ? editedProfile.writing_type.value : profile.writing_type.value}
+								</span>
+							</span>
+						</div>
+
+						<div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100/50 mt-1 transition-colors">
+							<span className="block text-[9px] font-mono text-slate-400 uppercase mb-1">
+								AI INSIGHT
+							</span>
+							<div
+								contentEditable={isEditing}
+								suppressContentEditableWarning
+								onBlur={(e) => {
+									if (!isEditing) return;
+									setEditedProfile({
+										...editedProfile,
+										writing_type: {
+											...editedProfile.writing_type,
+											reasoning: e.currentTarget.innerText,
+										},
+									});
+								}}
+								className={`text-sm text-slate-600 leading-relaxed focus:outline-none rounded transition-colors ${
+									isEditing
+										? "focus:bg-slate-100/50 cursor-text hover:bg-slate-100/30 p-1 -m-1"
+										: ""
+								}`}
+							>
+								{isEditing ? editedProfile.writing_type.reasoning : profile.personaDescription}
+							</div>
+						</div>
 					</div>
 
 					<div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-6">
@@ -266,50 +257,54 @@ export default function ProfileDashboard({
 									Tone & Voice
 								</h3>
 							</div>
-							{!isEditing && renderConfidenceBadge(profile.tone.confidence)}
+							{renderConfidenceBadge(isEditing ? editedProfile.tone.confidence : profile.tone.confidence)}
 						</div>
 
-						{isEditing ? (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<input
-										type="text"
-										value={editedProfile.tone.value}
-										onChange={(e) =>
+						<div className="space-y-3">
+							<div className="flex flex-wrap gap-1.5">
+								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
+									<span
+										contentEditable={isEditing}
+										suppressContentEditableWarning
+										onBlur={(e) => {
+											if (!isEditing) return;
 											setEditedProfile({
 												...editedProfile,
-												tone: { ...editedProfile.tone, value: e.target.value },
-											})
-										}
-										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 capitalize focus:outline-none focus:ring-1 focus:ring-indigo-450 w-full max-w-[200px]"
-									/>
-								</div>
-								<textarea
-									value={editedProfile.tone.reasoning}
-									onChange={(e) =>
+												tone: { ...editedProfile.tone, value: e.currentTarget.innerText.trim() },
+											});
+										}}
+										className={`focus:outline-none rounded px-1 -mx-1 ${
+											isEditing ? "focus:bg-indigo-100/50 cursor-text hover:bg-indigo-100/30" : ""
+										}`}
+									>
+										{isEditing ? editedProfile.tone.value : profile.tone.value}
+									</span>
+								</span>
+							</div>
+							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
+								<span className="select-none">"</span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
 										setEditedProfile({
 											...editedProfile,
 											tone: {
 												...editedProfile.tone,
-												reasoning: e.target.value,
+												reasoning: e.currentTarget.innerText,
 											},
-										})
-									}
-									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none h-24 mt-2"
-								/>
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 transition-colors w-full ${
+										isEditing ? "focus:bg-slate-50/50 cursor-text hover:bg-slate-50/30" : ""
+									}`}
+								>
+									{isEditing ? editedProfile.tone.reasoning : profile.tone.reasoning}
+								</span>
+								<span className="select-none">"</span>
 							</div>
-						) : (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
-										{profile.tone.value}
-									</span>
-								</div>
-								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
-									"{profile.tone.reasoning}"
-								</p>
-							</div>
-						)}
+						</div>
 					</div>
 					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
 						Primary Tone: {isEditing ? editedProfile.tone.value : profile.tone.value}
@@ -326,54 +321,54 @@ export default function ProfileDashboard({
 									Opening Hook Style
 								</h3>
 							</div>
-							{!isEditing &&
-								renderConfidenceBadge(profile.hoop_type.confidence)}
+							{renderConfidenceBadge(isEditing ? editedProfile.hoop_type.confidence : profile.hoop_type.confidence)}
 						</div>
 
-						{isEditing ? (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<input
-										type="text"
-										value={editedProfile.hoop_type.value}
-										onChange={(e) =>
+						<div className="space-y-3">
+							<div className="flex flex-wrap gap-1.5">
+								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-purple-700 capitalize">
+									<span
+										contentEditable={isEditing}
+										suppressContentEditableWarning
+										onBlur={(e) => {
+											if (!isEditing) return;
 											setEditedProfile({
 												...editedProfile,
-												hoop_type: {
-													...editedProfile.hoop_type,
-													value: e.target.value,
-												},
-											})
-										}
-										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-250 text-purple-700 capitalize focus:outline-none focus:ring-1 focus:ring-purple-400 w-full max-w-[200px]"
-									/>
-								</div>
-								<textarea
-									value={editedProfile.hoop_type.reasoning}
-									onChange={(e) =>
+												hoop_type: { ...editedProfile.hoop_type, value: e.currentTarget.innerText.trim() },
+											});
+										}}
+										className={`focus:outline-none rounded px-1 -mx-1 ${
+											isEditing ? "focus:bg-purple-100/50 cursor-text hover:bg-purple-100/30" : ""
+										}`}
+									>
+										{isEditing ? editedProfile.hoop_type.value : profile.hoop_type.value}
+									</span>
+								</span>
+							</div>
+							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
+								<span className="select-none">"</span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
 										setEditedProfile({
 											...editedProfile,
 											hoop_type: {
 												...editedProfile.hoop_type,
-												reasoning: e.target.value,
+												reasoning: e.currentTarget.innerText,
 											},
-										})
-									}
-									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-purple-400 resize-none h-24 mt-2"
-								/>
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 transition-colors w-full ${
+										isEditing ? "focus:bg-slate-50/50 cursor-text hover:bg-slate-50/30" : ""
+									}`}
+								>
+									{isEditing ? editedProfile.hoop_type.reasoning : profile.hoop_type.reasoning}
+								</span>
+								<span className="select-none">"</span>
 							</div>
-						) : (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-purple-700 capitalize">
-										{profile.hoop_type.value}
-									</span>
-								</div>
-								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
-									"{profile.hoop_type.reasoning}"
-								</p>
-							</div>
-						)}
+						</div>
 					</div>
 					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
 						Hook Style: {isEditing ? editedProfile.hoop_type.value : profile.hoop_type.value}
@@ -390,58 +385,95 @@ export default function ProfileDashboard({
 									Core Niches & Topics
 								</h3>
 							</div>
-							{!isEditing && renderConfidenceBadge(profile.topic.confidence)}
+							{renderConfidenceBadge(isEditing ? editedProfile.topic.confidence : profile.topic.confidence)}
 						</div>
 
-						{isEditing ? (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<input
-										type="text"
-										value={editedProfile.topic.value.join(", ")}
-										onChange={(e) =>
-											setEditedProfile({
-												...editedProfile,
-												topic: {
-													...editedProfile.topic,
-													value: e.target.value.split(",").map((t) => t.trim()),
-												},
-											})
-										}
-										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-250 text-amber-700 focus:outline-none focus:ring-1 focus:ring-amber-400 w-full max-w-[280px]"
-									/>
-								</div>
-								<textarea
-									value={editedProfile.topic.reasoning}
-									onChange={(e) =>
+						<div className="space-y-3">
+							<div className="flex flex-wrap gap-1.5">
+								{(isEditing ? editedProfile.topic.value : profile.topic.value).map((topicItem, idx) => (
+									<span
+										key={idx}
+										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 capitalize"
+									>
+										<span
+											contentEditable={isEditing}
+											suppressContentEditableWarning
+											onBlur={(e) => {
+												if (!isEditing) return;
+												const newTopicValue = e.currentTarget.innerText.trim();
+												const newTopics = [...editedProfile.topic.value];
+												if (newTopicValue === '') {
+													newTopics.splice(idx, 1);
+												} else {
+													newTopics[idx] = newTopicValue;
+												}
+												setEditedProfile({
+													...editedProfile,
+													topic: { ...editedProfile.topic, value: newTopics },
+												});
+											}}
+											className={`focus:outline-none rounded px-1 -mx-1 ${
+												isEditing ? "focus:bg-amber-100/50 cursor-text hover:bg-amber-100/30" : ""
+											}`}
+										>
+											{topicItem}
+										</span>
+									</span>
+								))}
+								{isEditing && (
+									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-50 border border-dashed border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 cursor-pointer">
+										<span
+											contentEditable
+											suppressContentEditableWarning
+											onBlur={(e) => {
+												const val = e.currentTarget.innerText.trim();
+												if (val !== '' && val !== '+ Add Topic') {
+													setEditedProfile({
+														...editedProfile,
+														topic: {
+															...editedProfile.topic,
+															value: [...editedProfile.topic.value, val]
+														}
+													});
+												}
+												e.currentTarget.innerText = '+ Add Topic';
+											}}
+											onFocus={(e) => {
+												if (e.currentTarget.innerText === '+ Add Topic') {
+													e.currentTarget.innerText = '';
+												}
+											}}
+											className="focus:outline-none"
+										>
+											+ Add Topic
+										</span>
+									</span>
+								)}
+							</div>
+							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
+								<span className="select-none">"</span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
 										setEditedProfile({
 											...editedProfile,
 											topic: {
 												...editedProfile.topic,
-												reasoning: e.target.value,
+												reasoning: e.currentTarget.innerText,
 											},
-										})
-									}
-									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none h-24 mt-2"
-								/>
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 transition-colors w-full ${
+										isEditing ? "focus:bg-slate-50/50 cursor-text hover:bg-slate-50/30" : ""
+									}`}
+								>
+									{isEditing ? editedProfile.topic.reasoning : profile.topic.reasoning}
+								</span>
+								<span className="select-none">"</span>
 							</div>
-						) : (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									{profile.topic.value.map((topicItem, idx) => (
-										<span
-											key={idx}
-											className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-amber-700 capitalize"
-										>
-											{topicItem}
-										</span>
-									))}
-								</div>
-								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
-									"{profile.topic.reasoning}"
-								</p>
-							</div>
-						)}
+						</div>
 					</div>
 					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
 						Topics Detected: {isEditing ? editedProfile.topic.value.length : profile.topic.value.length}
@@ -458,75 +490,65 @@ export default function ProfileDashboard({
 									Average Word Count
 								</h3>
 							</div>
-							{!isEditing &&
-								renderConfidenceBadge(profile.avg_words.confidence)}
+							{renderConfidenceBadge(isEditing ? editedProfile.avg_words.confidence : profile.avg_words.confidence)}
 						</div>
 
-						{isEditing ? (
-							<div className="space-y-3">
-								<div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
-									<span>Target Sizing</span>
-									<div className="flex items-center gap-1">
-										<input
-											type="number"
-											value={editedProfile.avg_words.value}
-											onChange={(e) =>
-												setEditedProfile({
-													...editedProfile,
-													avg_words: {
-														...editedProfile.avg_words,
-														value: parseInt(e.target.value) || 200,
-													},
-												})
-											}
-											className="text-xs font-bold px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-250 text-emerald-700 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400 w-[80px]"
-										/>
-										<span className="text-xs text-slate-500">words</span>
-									</div>
-								</div>
-								<div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 mt-2">
-									<div
-										className="h-full bg-emerald-500 transition-all duration-300"
-										style={{
-											width: `${Math.min((editedProfile.avg_words.value / 400) * 100, 100)}%`,
+						<div className="space-y-3">
+							<div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
+								<span>Target Sizing</span>
+								<span className="inline-flex items-center text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg font-mono">
+									<span
+										contentEditable={isEditing}
+										suppressContentEditableWarning
+										onBlur={(e) => {
+											if (!isEditing) return;
+											const val = parseInt(e.currentTarget.innerText) || 200;
+											setEditedProfile({
+												...editedProfile,
+												avg_words: { ...editedProfile.avg_words, value: val }
+											});
 										}}
-									/>
-								</div>
-								<textarea
-									value={editedProfile.avg_words.reasoning}
-									onChange={(e) =>
+										className={`focus:outline-none rounded px-1 -mx-1 font-bold ${
+											isEditing ? "focus:bg-emerald-100/50 cursor-text hover:bg-emerald-100/30" : ""
+										}`}
+									>
+										{isEditing ? editedProfile.avg_words.value : profile.avg_words.value}
+									</span>
+									<span className="ml-1">words</span>
+								</span>
+							</div>
+							<div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 mt-2">
+								<div
+									className="h-full bg-emerald-500 transition-all duration-300"
+									style={{
+										width: `${Math.min(((isEditing ? editedProfile.avg_words.value : profile.avg_words.value) / 400) * 100, 100)}%`,
+									}}
+								/>
+							</div>
+							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
+								<span className="select-none">"</span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
 										setEditedProfile({
 											...editedProfile,
 											avg_words: {
 												...editedProfile.avg_words,
-												reasoning: e.target.value,
+												reasoning: e.currentTarget.innerText,
 											},
-										})
-									}
-									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-emerald-400 resize-none h-24 mt-2"
-								/>
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 transition-colors w-full ${
+										isEditing ? "focus:bg-slate-50/50 cursor-text hover:bg-slate-50/30" : ""
+									}`}
+								>
+									{isEditing ? editedProfile.avg_words.reasoning : profile.avg_words.reasoning}
+								</span>
+								<span className="select-none">"</span>
 							</div>
-						) : (
-							<div className="space-y-3">
-								<div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
-									<span>Target Sizing</span>
-									<span className="text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg font-mono">
-										{profile.avg_words.value} words
-									</span>
-								</div>
-								<div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-									<div
-										className="h-full bg-emerald-500"
-										style={{
-											width: `${Math.min((profile.avg_words.value / 400) * 100, 100)}%`,
-										}}
-									/>
-								</div>
-								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
-									"{profile.avg_words.reasoning}"
-								</p>
-							</div>
-						)}
+						</div>
 					</div>
 					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
 						Word Count: {isEditing ? editedProfile.avg_words.value : profile.avg_words.value} words
@@ -543,57 +565,59 @@ export default function ProfileDashboard({
 									Emoji Frequency
 								</h3>
 							</div>
-							{!isEditing &&
-								renderConfidenceBadge(profile.emoji_frequency.confidence)}
+							{renderConfidenceBadge(isEditing ? editedProfile.emoji_frequency.confidence : profile.emoji_frequency.confidence)}
 						</div>
 
-						{isEditing ? (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<select
-										value={editedProfile.emoji_frequency.value}
-										onChange={(e) =>
-											setEditedProfile({
-												...editedProfile,
-												emoji_frequency: {
-													...editedProfile.emoji_frequency,
-													value: e.target.value,
-												},
-											})
-										}
-										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-755 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
-									>
-										<option value="high">High Frequency</option>
-										<option value="moderate">Moderate Frequency</option>
-										<option value="low">Low Frequency</option>
-									</select>
-								</div>
-								<textarea
-									value={editedProfile.emoji_frequency.reasoning}
-									onChange={(e) =>
+						<div className="space-y-3">
+							<div className="flex flex-wrap gap-1.5">
+								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
+									{isEditing ? (
+										<select
+											value={editedProfile.emoji_frequency.value}
+											onChange={(e) =>
+												setEditedProfile({
+													...editedProfile,
+													emoji_frequency: {
+														...editedProfile.emoji_frequency,
+														value: e.target.value,
+													},
+												})
+											}
+											className="bg-transparent border-0 p-0 focus:ring-0 focus:outline-none text-xs font-bold text-indigo-700 capitalize cursor-pointer appearance-none outline-none"
+										>
+											<option value="high">High Frequency</option>
+											<option value="moderate">Moderate Frequency</option>
+											<option value="low">Low Frequency</option>
+										</select>
+									) : (
+										<span>{profile.emoji_frequency.value} Frequency</span>
+									)}
+								</span>
+							</div>
+							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
+								<span className="select-none">"</span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
 										setEditedProfile({
 											...editedProfile,
 											emoji_frequency: {
 												...editedProfile.emoji_frequency,
-												reasoning: e.target.value,
+												reasoning: e.currentTarget.innerText,
 											},
-										})
-									}
-									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 resize-none h-24 mt-2"
-								/>
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 transition-colors w-full ${
+										isEditing ? "focus:bg-slate-50/50 cursor-text hover:bg-slate-50/30" : ""
+									}`}
+								>
+									{isEditing ? editedProfile.emoji_frequency.reasoning : profile.emoji_frequency.reasoning}
+								</span>
+								<span className="select-none">"</span>
 							</div>
-						) : (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
-										{profile.emoji_frequency.value} Frequency
-									</span>
-								</div>
-								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
-									"{profile.emoji_frequency.reasoning}"
-								</p>
-							</div>
-						)}
+						</div>
 					</div>
 					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
 						Emoji Level: {isEditing ? editedProfile.emoji_frequency.value : profile.emoji_frequency.value}
@@ -610,57 +634,59 @@ export default function ProfileDashboard({
 									Paragraph Structure
 								</h3>
 							</div>
-							{!isEditing &&
-								renderConfidenceBadge(profile.paragraph_size.confidence)}
+							{renderConfidenceBadge(isEditing ? editedProfile.paragraph_size.confidence : profile.paragraph_size.confidence)}
 						</div>
 
-						{isEditing ? (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<select
-										value={editedProfile.paragraph_size.value}
-										onChange={(e) =>
-											setEditedProfile({
-												...editedProfile,
-												paragraph_size: {
-													...editedProfile.paragraph_size,
-													value: e.target.value,
-												},
-											})
-										}
-										className="text-xs font-bold px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-755 focus:outline-none focus:ring-1 focus:ring-cyan-400 cursor-pointer"
-									>
-										<option value="short">Short paragraphs</option>
-										<option value="medium">Medium paragraphs</option>
-										<option value="long">Long paragraphs</option>
-									</select>
-								</div>
-								<textarea
-									value={editedProfile.paragraph_size.reasoning}
-									onChange={(e) =>
+						<div className="space-y-3">
+							<div className="flex flex-wrap gap-1.5">
+								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700 capitalize">
+									{isEditing ? (
+										<select
+											value={editedProfile.paragraph_size.value}
+											onChange={(e) =>
+												setEditedProfile({
+													...editedProfile,
+													paragraph_size: {
+														...editedProfile.paragraph_size,
+														value: e.target.value,
+													},
+												})
+											}
+											className="bg-transparent border-0 p-0 focus:ring-0 focus:outline-none text-xs font-bold text-cyan-700 capitalize cursor-pointer appearance-none outline-none"
+										>
+											<option value="short">Short paragraphs</option>
+											<option value="medium">Medium paragraphs</option>
+											<option value="long">Long paragraphs</option>
+										</select>
+									) : (
+										<span>{profile.paragraph_size.value} paragraphs</span>
+									)}
+								</span>
+							</div>
+							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
+								<span className="select-none">"</span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
 										setEditedProfile({
 											...editedProfile,
 											paragraph_size: {
 												...editedProfile.paragraph_size,
-												reasoning: e.target.value,
+												reasoning: e.currentTarget.innerText,
 											},
-										})
-									}
-									className="w-full text-xs sm:text-[13px] text-slate-600 leading-relaxed italic bg-slate-50/50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-400 resize-none h-24 mt-2"
-								/>
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 transition-colors w-full ${
+										isEditing ? "focus:bg-slate-50/50 cursor-text hover:bg-slate-50/30" : ""
+									}`}
+								>
+									{isEditing ? editedProfile.paragraph_size.reasoning : profile.paragraph_size.reasoning}
+								</span>
+								<span className="select-none">"</span>
 							</div>
-						) : (
-							<div className="space-y-3">
-								<div className="flex flex-wrap gap-1.5">
-									<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700 capitalize">
-										{profile.paragraph_size.value} paragraphs
-									</span>
-								</div>
-								<p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2">
-									"{profile.paragraph_size.reasoning}"
-								</p>
-							</div>
-						)}
+						</div>
 					</div>
 					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
 						Paragraph Size: {isEditing ? editedProfile.paragraph_size.value : profile.paragraph_size.value}
