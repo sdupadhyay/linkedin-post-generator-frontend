@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Lightbulb, Check, ChevronLeft, Sparkles, Compass, TrendingUp, Target, ShieldCheck, Code2, RefreshCw, Copy, CheckCheck, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Lightbulb, Check, ChevronLeft, Sparkles, Compass, TrendingUp, Target, ShieldCheck, Code2, RefreshCw, Copy, CheckCheck, FileText, Brain, Cpu } from 'lucide-react';
 import { getSupabase } from '../utils/supabaseClient';
 import type { WritingProfile } from './ProfileDashboard';
 
@@ -38,6 +38,17 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Custom Topic form states
+  const [customTitle, setCustomTitle] = useState('');
+  const [customReasoning, setCustomReasoning] = useState('');
+  const [customTopic, setCustomTopic] = useState<{ title: string; description: string } | null>(null);
+
+  useEffect(() => {
+    if (topics.length === 0) {
+      handleGenerate();
+    }
+  }, []);
+
   // Helper to reverse map frontend UI profile back to backend raw schema
   const mapProfileToDna = (p: WritingProfile) => {
     return {
@@ -58,6 +69,9 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
     setGeneratedPost(null);
     setOutline(null);
     setFeedback('');
+    setCustomTitle('');
+    setCustomReasoning('');
+    setCustomTopic(null);
     setStep('topics');
     setErrorMsg(null);
 
@@ -127,6 +141,9 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
 
   const handleSelectTopic = (id: string) => {
     setSelectedTopicId(id);
+    setCustomTopic(null);
+    setCustomTitle('');
+    setCustomReasoning('');
     setGeneratedPost(null);
     setOutline(null);
     setFeedback('');
@@ -137,6 +154,7 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
     const selected = topics.find(t => t.id === selectedTopicId);
     if (!selected) return;
 
+    setCustomTopic(null);
     setIsGeneratingOutline(true);
     setOutline(null);
     setFeedback('');
@@ -181,10 +199,80 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
     }
   };
 
+  const handleGenerateCustomOutline = async () => {
+    if (!customTitle.trim()) return;
+
+    setSelectedTopicId(null);
+    setIsGeneratingOutline(true);
+    setOutline(null);
+    setFeedback('');
+    setErrorMsg(null);
+
+    const topicData = {
+      title: customTitle.trim(),
+      description: customReasoning.trim() || 'Write a compelling post on this topic.'
+    };
+    setCustomTopic(topicData);
+
+    try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication session has expired. Please sign in.');
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      
+      const response = await fetch(`${apiUrl}/api/outline`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          topic: {
+            title: topicData.title,
+            reasoning: topicData.description
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to generate content outline.');
+      }
+
+      const result = await response.json();
+      setOutline(result);
+      setStep('outline');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to generate outline.');
+    } finally {
+      setIsGeneratingOutline(false);
+    }
+  };
+
   const handleGeneratePostDraft = async () => {
-    if (!selectedTopicId) return;
-    const selected = topics.find(t => t.id === selectedTopicId);
-    if (!selected) return;
+    let selectedTopic = null;
+    if (customTopic) {
+      selectedTopic = {
+        title: customTopic.title,
+        description: customTopic.description,
+        isCustom: true
+      };
+    } else if (selectedTopicId) {
+      const selected = topics.find(t => t.id === selectedTopicId);
+      if (selected) {
+        selectedTopic = {
+          title: selected.title,
+          description: selected.description,
+          isCustom: false
+        };
+      }
+    }
+
+    if (!selectedTopic) return;
 
     setIsGeneratingPost(true);
     setGeneratedPost(null);
@@ -209,9 +297,9 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
         body: JSON.stringify({
           dnaProfile: rawDnaProfile,
           topic: {
-            title: selected.title,
-            reasoning: selected.description,
-            isCustom: false
+            title: selectedTopic.title,
+            reasoning: selectedTopic.description,
+            isCustom: selectedTopic.isCustom
           },
           outline: outline || undefined,
           feedback: feedback.trim() || undefined
@@ -267,7 +355,7 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
       </button>
 
       {/* Step Progress Indicator */}
-      {topics.length > 0 && !isLoading && (
+      {!isLoading && (
         <div className="flex items-center justify-center max-w-md mx-auto mb-8 select-none">
           <div className="flex items-center w-full">
             {/* Step 1: Select Topic */}
@@ -378,10 +466,39 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
 
       {/* Loader */}
       {isLoading && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4" />
-          <p className="text-sm text-slate-500 italic animate-pulse">
-            Querying Tavily Trend API and matching with persona...
+        <div className="flex flex-col items-center justify-center py-16 text-center select-none animate-fade-in-up">
+          <div className="relative w-32 h-32 mb-6 flex items-center justify-center">
+            {/* Outer Pulsing Ring */}
+            <div className="absolute inset-0 rounded-full border-2 border-indigo-500/10 animate-pulse" />
+
+            {/* Orbit Ring 1 - Cyan */}
+            <div className="absolute w-26 h-26 rounded-full border-t border-b border-cyan-500/20 animate-spin" style={{ animationDuration: '8s' }} />
+
+            {/* Orbit Ring 2 - Violet (Spinning Counter-Clockwise) */}
+            <div className="absolute w-20 h-20 rounded-full border-l border-r border-purple-500/20 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '5s' }} />
+
+            {/* Orbit Ring 3 - Indigo (Fast) */}
+            <div className="absolute w-16 h-16 rounded-full border-t-2 border-indigo-500/40 animate-spin" style={{ animationDuration: '2.5s' }} />
+
+            {/* Inner Hub Glass Sphere */}
+            <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-md relative">
+              <Brain className="w-4 h-4 text-purple-600 animate-pulse" />
+              <div className="absolute -top-0.5 -right-0.5">
+                <Sparkles className="w-3 h-3 text-cyan-600 animate-bounce" style={{ animationDuration: '1.5s' }} />
+              </div>
+            </div>
+          </div>
+          
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-mono font-semibold text-indigo-600 uppercase tracking-wider mb-2.5 animate-pulse">
+            <Cpu className="w-3.5 h-3.5 text-cyan-600 animate-spin" style={{ animationDuration: '4s' }} />
+            <span>Scanning Search Niche Trends</span>
+          </div>
+          
+          <p className="text-sm font-bold text-slate-800 animate-pulse">
+            Querying Tavily Web Trends & Matching with Persona DNA...
+          </p>
+          <p className="text-[11px] text-slate-500 max-w-xs mt-1">
+            Analyzing real-time industry topics to engineer custom high-converting angles.
           </p>
         </div>
       )}
@@ -412,91 +529,144 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
         </div>
       )}
 
-      {/* Step 1: Choose a Topic */}
-      {step === 'topics' && topics.length > 0 && !isLoading && !isGeneratingOutline && (
+      {/* Step 1: Choose or Write a Topic */}
+      {step === 'topics' && !isLoading && !isGeneratingOutline && (
         <div className="space-y-6 animate-fade-in-up">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {topics.map((topic) => {
-              const isSelected = selectedTopicId === topic.id;
-              const IconComp = topic.icon;
+          {topics.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {topics.map((topic) => {
+                const isSelected = selectedTopicId === topic.id;
+                const IconComp = topic.icon;
 
-              return (
-                <div
-                  key={topic.id}
-                  onClick={() => handleSelectTopic(topic.id)}
-                  className={`glass-card rounded-2xl p-5 cursor-pointer relative overflow-hidden transition-all duration-300 select-none ${
-                    isSelected
-                      ? 'border-indigo-500 bg-indigo-50/50 shadow-md scale-[1.01]'
-                      : 'hover:scale-[1.01]'
-                  }`}
-                >
-                  {/* Select indicator */}
-                  {isSelected && (
-                    <div className="absolute top-4 right-4 p-1 rounded-full bg-indigo-500 border border-indigo-400 flex items-center justify-center animate-pulse">
-                      <Check className="w-3.5 h-3.5 text-white" />
-                    </div>
-                  )}
-
-                  <div className="flex items-start gap-4 pr-6">
-                    <div className={`p-3 rounded-xl border ${
+                return (
+                  <div
+                    key={topic.id}
+                    onClick={() => handleSelectTopic(topic.id)}
+                    className={`glass-card rounded-2xl p-5 cursor-pointer relative overflow-hidden transition-all duration-300 select-none ${
                       isSelected
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                        : 'bg-slate-50 border-slate-200 text-slate-500'
-                    }`}>
-                      <IconComp className="w-5 h-5" />
-                    </div>
+                        ? 'border-indigo-500 bg-indigo-50/50 shadow-md scale-[1.01]'
+                        : 'hover:scale-[1.01]'
+                    }`}
+                  >
+                    {/* Select indicator */}
+                    {isSelected && (
+                      <div className="absolute top-4 right-4 p-1 rounded-full bg-indigo-500 border border-indigo-400 flex items-center justify-center animate-pulse">
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    )}
 
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded uppercase">
-                          {topic.category}
-                        </span>
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase ${
-                          topic.difficulty === 'Storytelling'
-                            ? 'text-yellow-700 bg-yellow-50 border border-yellow-200'
-                            : topic.difficulty === 'Authority'
-                            ? 'text-purple-700 bg-purple-50 border border-purple-200'
-                            : 'text-cyan-700 bg-cyan-50 border border-cyan-200'
-                        }`}>
-                          {topic.difficulty}
-                        </span>
+                    <div className="flex items-start gap-4 pr-6">
+                      <div className={`p-3 rounded-xl border ${
+                        isSelected
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                          : 'bg-slate-50 border-slate-200 text-slate-500'
+                      }`}>
+                        <IconComp className="w-5 h-5" />
                       </div>
 
-                      <h3 className="text-base font-bold text-slate-800 pr-2">
-                        {topic.title}
-                      </h3>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded uppercase">
+                            {topic.category}
+                          </span>
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase ${
+                            topic.difficulty === 'Storytelling'
+                              ? 'text-yellow-700 bg-yellow-50 border border-yellow-200'
+                              : topic.difficulty === 'Authority'
+                              ? 'text-purple-700 bg-purple-50 border border-purple-200'
+                              : 'text-cyan-700 bg-cyan-50 border border-cyan-200'
+                          }`}>
+                            {topic.difficulty}
+                          </span>
+                        </div>
 
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        {topic.description}
-                      </p>
+                        <h3 className="text-base font-bold text-slate-800 pr-2">
+                          {topic.title}
+                        </h3>
+
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                          {topic.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
+
+          {topics.length > 0 && (
+            <>
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-200/50"></div>
+                <span className="flex-shrink mx-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or write your own topic concept</span>
+                <div className="flex-grow border-t border-slate-200/50"></div>
+              </div>
+
+              {/* Custom Topic Form */}
+              <div className="glass-card rounded-2xl p-6 border border-indigo-150/20 space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                    <Lightbulb className="w-4 h-4 text-yellow-500" />
+                    <span>Create a Custom Topic</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Type your own topic title and details. We will build a structured outline and draft calibrated to your profile.
+                  </p>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Topic Title (e.g. Scaling our engineering team to 50 developers)"
+                    value={customTitle}
+                    onChange={(e) => {
+                      setCustomTitle(e.target.value);
+                      setSelectedTopicId(null);
+                    }}
+                    className="w-full p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all placeholder-slate-400 font-semibold"
+                  />
+                  <textarea
+                    placeholder="Context / Key Takeaways / Reasoning (e.g. What were the core mistakes made? How did we change sourcing? Give numbers/metrics)"
+                    value={customReasoning}
+                    onChange={(e) => {
+                      setCustomReasoning(e.target.value);
+                      setSelectedTopicId(null);
+                    }}
+                    className="w-full min-h-[90px] p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all leading-relaxed placeholder-slate-400"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6 mt-8">
-            <button
-              onClick={handleGenerate}
-              className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5 mr-2 text-indigo-500" />
-              <span>Regenerate Suggestions</span>
-            </button>
+            <div>
+              {topics.length > 0 ? (
+                <button
+                  onClick={handleGenerate}
+                  className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 mr-2 text-indigo-500" />
+                  <span>Regenerate Suggestions</span>
+                </button>
+              ) : (
+                <div />
+              )}
+            </div>
 
             <button
-              onClick={handleGenerateOutline}
-              disabled={!selectedTopicId || isGeneratingOutline}
+              onClick={customTitle.trim() ? handleGenerateCustomOutline : handleGenerateOutline}
+              disabled={(!selectedTopicId && !customTitle.trim()) || isGeneratingOutline}
               className={`inline-flex items-center justify-center py-3.5 px-8 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg cursor-pointer ${
-                !selectedTopicId || isGeneratingOutline
+                (!selectedTopicId && !customTitle.trim()) || isGeneratingOutline
                   ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
                   : 'bg-gradient-to-r from-indigo-500 via-purple-600 to-cyan-500 hover:from-indigo-600 hover:to-purple-700 text-white shadow-purple-600/10 hover:shadow-purple-600/25 border border-purple-500/20'
               }`}
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              <span>Generate Outline & Steer</span>
+              <Sparkles className="w-4 h-4 mr-2 text-yellow-250 animate-pulse" />
+              <span>{customTitle.trim() ? 'Generate Custom Outline' : 'Generate Outline & Steer'}</span>
             </button>
           </div>
         </div>
@@ -695,6 +865,9 @@ export default function TopicGenerator({ profile, onBack }: TopicGeneratorProps)
                 setOutline(null);
                 setFeedback('');
                 setGeneratedPost(null);
+                setCustomTitle('');
+                setCustomReasoning('');
+                setCustomTopic(null);
                 setStep('topics');
               }}
               className="inline-flex items-center justify-center py-2.5 px-5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-650 font-semibold text-xs transition-all cursor-pointer"

@@ -12,6 +12,7 @@ import {
 	RefreshCw,
 	Cpu,
 	Target,
+	ChevronDown,
 } from "lucide-react";
 
 export interface DnaField<T> {
@@ -153,36 +154,47 @@ export default function ProfileDashboard({
 						</h2>
 
 						<div className="mb-3">
-							<span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 uppercase tracking-wider">
+							<span className="relative inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 border border-indigo-100 text-indigo-700 uppercase tracking-wider">
 								<Sparkles className="w-3 h-3 text-indigo-500" />
-								<span>Paradigm: </span>
-								<span
-									contentEditable={isEditing}
-									suppressContentEditableWarning
-									onBlur={(e) => {
-										if (!isEditing) return;
-										const newType = e.currentTarget.innerText.trim();
-										const toneVal = (editedProfile.tone.value || '').toLowerCase();
-										let personaName = 'The Technical Storyteller';
-										const wType = newType.toLowerCase();
-										if (wType.includes('inform') || wType.includes('educat')) {
-											personaName = 'The Authority Educator';
-										} else if (toneVal.includes('bold') || toneVal.includes('assert')) {
-											personaName = 'The Bold Thought Leader';
-										} else if (toneVal.includes('convers') || toneVal.includes('friend')) {
-											personaName = 'The Conversational Networker';
-										}
+								<span>Paradigm: {isEditing ? editedProfile.writing_type.value : profile.writing_type.value}</span>
+								{isEditing && (
+									<>
+										<ChevronDown className="w-2.5 h-2.5 text-indigo-500 pointer-events-none" />
+										<select
+											value={editedProfile.writing_type.value?.toLowerCase()}
+											onChange={(e) => {
+												const newType = e.target.value;
+												const toneVal = (editedProfile.tone.value || '').toLowerCase();
+												let personaName = 'The Technical Storyteller';
+												const wType = newType.toLowerCase();
+												if (wType.includes('inform') || wType.includes('educat')) {
+													personaName = 'The Authority Educator';
+												} else if (toneVal.includes('bold') || toneVal.includes('assert')) {
+													personaName = 'The Bold Thought Leader';
+												} else if (toneVal.includes('convers') || toneVal.includes('friend')) {
+													personaName = 'The Conversational Networker';
+												}
 
-										setEditedProfile({
-											...editedProfile,
-											writing_type: { ...editedProfile.writing_type, value: newType },
-											personaName
-										});
-									}}
-									className={`focus:outline-none rounded px-1 -mx-1 ${isEditing ? 'focus:bg-indigo-100/50 cursor-text hover:bg-indigo-100/30' : ''}`}
-								>
-									{isEditing ? editedProfile.writing_type.value : profile.writing_type.value}
-								</span>
+												setEditedProfile({
+													...editedProfile,
+													writing_type: { ...editedProfile.writing_type, value: newType },
+													personaName
+												});
+											}}
+											className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+										>
+											{editedProfile.writing_type.value && !["listicle", "storytelling", "thought leadership", "case study", "how-to guide", "contrarian"].includes(editedProfile.writing_type.value.toLowerCase()) && (
+												<option value={editedProfile.writing_type.value.toLowerCase()}>{editedProfile.writing_type.value}</option>
+											)}
+											<option value="listicle">Listicle</option>
+											<option value="storytelling">Storytelling</option>
+											<option value="thought leadership">Thought Leadership</option>
+											<option value="case study">Case Study</option>
+											<option value="how-to guide">How-To Guide</option>
+											<option value="contrarian">Contrarian</option>
+										</select>
+									</>
+								)}
 							</span>
 						</div>
 
@@ -262,23 +274,35 @@ export default function ProfileDashboard({
 
 						<div className="space-y-3">
 							<div className="flex flex-wrap gap-1.5">
-								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
-									<span
-										contentEditable={isEditing}
-										suppressContentEditableWarning
-										onBlur={(e) => {
-											if (!isEditing) return;
-											setEditedProfile({
-												...editedProfile,
-												tone: { ...editedProfile.tone, value: e.currentTarget.innerText.trim() },
-											});
-										}}
-										className={`focus:outline-none rounded px-1 -mx-1 ${
-											isEditing ? "focus:bg-indigo-100/50 cursor-text hover:bg-indigo-100/30" : ""
-										}`}
-									>
-										{isEditing ? editedProfile.tone.value : profile.tone.value}
-									</span>
+								<span className="relative inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
+									<span>{isEditing ? editedProfile.tone.value : profile.tone.value}</span>
+									{isEditing && (
+										<>
+											<ChevronDown className="w-3.5 h-3.5 text-indigo-500 pointer-events-none" />
+											<select
+												value={editedProfile.tone.value?.toLowerCase()}
+												onChange={(e) =>
+													setEditedProfile({
+														...editedProfile,
+														tone: { ...editedProfile.tone, value: e.target.value },
+													})
+												}
+												className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+											>
+												{editedProfile.tone.value && !["conversational", "authoritative", "bold", "informative", "inspirational", "humorous", "analytical", "empathetic"].includes(editedProfile.tone.value.toLowerCase()) && (
+													<option value={editedProfile.tone.value.toLowerCase()}>{editedProfile.tone.value}</option>
+												)}
+												<option value="conversational">Conversational</option>
+												<option value="authoritative">Authoritative</option>
+												<option value="bold">Bold / Contrarian</option>
+												<option value="informative">Informative</option>
+												<option value="inspirational">Inspirational</option>
+												<option value="humorous">Humorous / Witty</option>
+												<option value="analytical">Analytical</option>
+												<option value="empathetic">Empathetic</option>
+											</select>
+										</>
+									)}
 								</span>
 							</div>
 							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
@@ -326,23 +350,34 @@ export default function ProfileDashboard({
 
 						<div className="space-y-3">
 							<div className="flex flex-wrap gap-1.5">
-								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-purple-700 capitalize">
-									<span
-										contentEditable={isEditing}
-										suppressContentEditableWarning
-										onBlur={(e) => {
-											if (!isEditing) return;
-											setEditedProfile({
-												...editedProfile,
-												hoop_type: { ...editedProfile.hoop_type, value: e.currentTarget.innerText.trim() },
-											});
-										}}
-										className={`focus:outline-none rounded px-1 -mx-1 ${
-											isEditing ? "focus:bg-purple-100/50 cursor-text hover:bg-purple-100/30" : ""
-										}`}
-									>
-										{isEditing ? editedProfile.hoop_type.value : profile.hoop_type.value}
-									</span>
+								<span className="relative inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-purple-700 capitalize">
+									<span>{isEditing ? editedProfile.hoop_type.value : profile.hoop_type.value}</span>
+									{isEditing && (
+										<>
+											<ChevronDown className="w-3.5 h-3.5 text-purple-500 pointer-events-none" />
+											<select
+												value={editedProfile.hoop_type.value?.toLowerCase()}
+												onChange={(e) =>
+													setEditedProfile({
+														...editedProfile,
+														hoop_type: { ...editedProfile.hoop_type, value: e.target.value },
+													})
+												}
+												className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+											>
+												{editedProfile.hoop_type.value && !["stat/metric", "question", "contrarian", "story/anecdote", "list/framework", "pain point", "bold claim"].includes(editedProfile.hoop_type.value.toLowerCase()) && (
+													<option value={editedProfile.hoop_type.value.toLowerCase()}>{editedProfile.hoop_type.value}</option>
+												)}
+												<option value="stat/metric">Stat / Metric</option>
+												<option value="question">Question</option>
+												<option value="contrarian">Contrarian Statement</option>
+												<option value="story/anecdote">Story / Anecdote</option>
+												<option value="list/framework">List / Framework</option>
+												<option value="pain point">Pain Point</option>
+												<option value="bold claim">Bold Claim</option>
+											</select>
+										</>
+									)}
 								</span>
 							</div>
 							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
@@ -496,25 +531,37 @@ export default function ProfileDashboard({
 						<div className="space-y-3">
 							<div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1">
 								<span>Target Sizing</span>
-								<span className="inline-flex items-center text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg font-mono">
-									<span
-										contentEditable={isEditing}
-										suppressContentEditableWarning
-										onBlur={(e) => {
-											if (!isEditing) return;
-											const val = parseInt(e.currentTarget.innerText) || 200;
-											setEditedProfile({
-												...editedProfile,
-												avg_words: { ...editedProfile.avg_words, value: val }
-											});
-										}}
-										className={`focus:outline-none rounded px-1 -mx-1 font-bold ${
-											isEditing ? "focus:bg-emerald-100/50 cursor-text hover:bg-emerald-100/30" : ""
-										}`}
-									>
-										{isEditing ? editedProfile.avg_words.value : profile.avg_words.value}
-									</span>
-									<span className="ml-1">words</span>
+								<span className="relative inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-lg font-mono">
+									<span>{isEditing ? editedProfile.avg_words.value : profile.avg_words.value}</span>
+									{isEditing && (
+										<>
+											<ChevronDown className="w-3.5 h-3.5 text-emerald-600 pointer-events-none" />
+											<select
+												value={editedProfile.avg_words.value}
+												onChange={(e) =>
+													setEditedProfile({
+														...editedProfile,
+														avg_words: { ...editedProfile.avg_words, value: parseInt(e.target.value) || 200 }
+													})
+												}
+												className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+											>
+												{editedProfile.avg_words.value && ![100, 150, 200, 250, 300, 350, 400, 450, 500].includes(editedProfile.avg_words.value) && (
+													<option value={editedProfile.avg_words.value}>{editedProfile.avg_words.value}</option>
+												)}
+												<option value={100}>100</option>
+												<option value={150}>150</option>
+												<option value={200}>200</option>
+												<option value={250}>250</option>
+												<option value={300}>300</option>
+												<option value={350}>350</option>
+												<option value={400}>400</option>
+												<option value={450}>450</option>
+												<option value={500}>500</option>
+											</select>
+										</>
+									)}
+									<span className="ml-0.5">words</span>
 								</span>
 							</div>
 							<div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 mt-2">
@@ -570,27 +617,29 @@ export default function ProfileDashboard({
 
 						<div className="space-y-3">
 							<div className="flex flex-wrap gap-1.5">
-								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
-									{isEditing ? (
-										<select
-											value={editedProfile.emoji_frequency.value}
-											onChange={(e) =>
-												setEditedProfile({
-													...editedProfile,
-													emoji_frequency: {
-														...editedProfile.emoji_frequency,
-														value: e.target.value,
-													},
-												})
-											}
-											className="bg-transparent border-0 p-0 focus:ring-0 focus:outline-none text-xs font-bold text-indigo-700 capitalize cursor-pointer appearance-none outline-none"
-										>
-											<option value="high">High Frequency</option>
-											<option value="moderate">Moderate Frequency</option>
-											<option value="low">Low Frequency</option>
-										</select>
-									) : (
-										<span>{profile.emoji_frequency.value} Frequency</span>
+								<span className="relative inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
+									<span>{isEditing ? `${editedProfile.emoji_frequency.value} Frequency` : `${profile.emoji_frequency.value} Frequency`}</span>
+									{isEditing && (
+										<>
+											<ChevronDown className="w-3.5 h-3.5 text-indigo-500 pointer-events-none" />
+											<select
+												value={editedProfile.emoji_frequency.value}
+												onChange={(e) =>
+													setEditedProfile({
+														...editedProfile,
+														emoji_frequency: {
+															...editedProfile.emoji_frequency,
+															value: e.target.value,
+														},
+													})
+												}
+												className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+											>
+												<option value="high">High Frequency</option>
+												<option value="moderate">Moderate Frequency</option>
+												<option value="low">Low Frequency</option>
+											</select>
+										</>
 									)}
 								</span>
 							</div>
@@ -639,27 +688,29 @@ export default function ProfileDashboard({
 
 						<div className="space-y-3">
 							<div className="flex flex-wrap gap-1.5">
-								<span className="text-xs font-bold px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700 capitalize">
-									{isEditing ? (
-										<select
-											value={editedProfile.paragraph_size.value}
-											onChange={(e) =>
-												setEditedProfile({
-													...editedProfile,
-													paragraph_size: {
-														...editedProfile.paragraph_size,
-														value: e.target.value,
-													},
-												})
-											}
-											className="bg-transparent border-0 p-0 focus:ring-0 focus:outline-none text-xs font-bold text-cyan-700 capitalize cursor-pointer appearance-none outline-none"
-										>
-											<option value="short">Short paragraphs</option>
-											<option value="medium">Medium paragraphs</option>
-											<option value="long">Long paragraphs</option>
-										</select>
-									) : (
-										<span>{profile.paragraph_size.value} paragraphs</span>
+								<span className="relative inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700 capitalize">
+									<span>{isEditing ? `${editedProfile.paragraph_size.value} paragraphs` : `${profile.paragraph_size.value} paragraphs`}</span>
+									{isEditing && (
+										<>
+											<ChevronDown className="w-3.5 h-3.5 text-cyan-600 pointer-events-none" />
+											<select
+												value={editedProfile.paragraph_size.value}
+												onChange={(e) =>
+													setEditedProfile({
+														...editedProfile,
+														paragraph_size: {
+															...editedProfile.paragraph_size,
+															value: e.target.value,
+														},
+													})
+												}
+												className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+											>
+												<option value="short">Short paragraphs</option>
+												<option value="medium">Medium paragraphs</option>
+												<option value="long">Long paragraphs</option>
+											</select>
+										</>
 									)}
 								</span>
 							</div>
