@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sparkles, LogOut, Cpu } from 'lucide-react';
 import { initSupabase, getSupabase } from './utils/supabaseClient';
 import Auth from './components/Auth';
@@ -37,6 +37,12 @@ export default function App() {
   const [apiState, setApiState] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [temporaryProfile, setTemporaryProfile] = useState<WritingProfile | null>(null);
 
+  // Synchronize view state in a ref to avoid stale closures in event listeners
+  const viewRef = useRef<ScreenView>(view);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
   // Initialize Supabase configuration on start
   useEffect(() => {
     async function setup() {
@@ -54,14 +60,22 @@ export default function App() {
         }
 
         // Set up auth state change listener
-        supabase.auth.onAuthStateChange(async (_event, session) => {
+        supabase.auth.onAuthStateChange(async (event, session) => {
           if (session) {
             setUserEmail(session.user.email ?? null);
-            await fetchUserProfile(session.user.id);
+            // Only fetch profile if starting up or explicit sign-in/out occurs.
+            // Prevents background token refreshes from resetting page routing.
+            if (viewRef.current === 'AUTH' || viewRef.current === 'LOADING') {
+              await fetchUserProfile(session.user.id);
+            }
           } else {
-            setUserEmail(null);
-            setProfile(null);
-            setView('AUTH');
+            // Only reset state and redirect if the event is explicitly SIGNED_OUT,
+            // or if the app is still loading and hasn't restored any session.
+            if (event === 'SIGNED_OUT' || viewRef.current === 'LOADING') {
+              setUserEmail(null);
+              setProfile(null);
+              setView('AUTH');
+            }
           }
         });
       } catch (err: any) {
