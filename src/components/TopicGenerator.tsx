@@ -39,6 +39,7 @@ interface PostOutline {
 interface TopicGeneratorProps {
 	profile: WritingProfile;
 	onBack: () => void;
+	selectedModel: string;
 }
 
 let lastFetchedTime = 0;
@@ -46,6 +47,7 @@ let lastFetchedTime = 0;
 export default function TopicGenerator({
 	profile,
 	onBack,
+	selectedModel,
 }: TopicGeneratorProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [isGeneratingPost, setIsGeneratingPost] = useState(false);
@@ -141,13 +143,14 @@ export default function TopicGenerator({
 			const rawDnaProfile = mapProfileToDna(profile);
 			const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 			console.log({ apiUrl });
+			const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
 			const response = await fetch(`${apiUrl}/api/topics`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${session.access_token}`,
 				},
-				body: JSON.stringify({ dnaProfile: rawDnaProfile }),
+				body: JSON.stringify({ dnaProfile: rawDnaProfile, model: selectedModel, provider: dynamicProvider }),
 			});
 			console.log({ response });
 			if (!response.ok) {
@@ -256,6 +259,7 @@ export default function TopicGenerator({
 
 			const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+			const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
 			const response = await fetch(`${apiUrl}/api/outline`, {
 				method: "POST",
 				headers: {
@@ -267,6 +271,8 @@ export default function TopicGenerator({
 						title: selected.title,
 						reasoning: selected.description,
 					},
+					model: selectedModel,
+					provider: dynamicProvider,
 				}),
 			});
 
@@ -313,6 +319,7 @@ export default function TopicGenerator({
 
 			const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+			const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
 			const response = await fetch(`${apiUrl}/api/outline`, {
 				method: "POST",
 				headers: {
@@ -324,6 +331,8 @@ export default function TopicGenerator({
 						title: topicData.title,
 						reasoning: topicData.description,
 					},
+					model: selectedModel,
+					provider: dynamicProvider,
 				}),
 			});
 
@@ -380,6 +389,7 @@ export default function TopicGenerator({
 			const rawDnaProfile = mapProfileToDna(profile);
 			const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+			const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
 			const response = await fetch(`${apiUrl}/api/generate`, {
 				method: "POST",
 				headers: {
@@ -395,6 +405,8 @@ export default function TopicGenerator({
 					},
 					outline: outline || undefined,
 					feedback: feedback.trim() || undefined,
+					model: selectedModel,
+					provider: dynamicProvider,
 				}),
 			});
 

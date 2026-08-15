@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, LogOut, Cpu } from 'lucide-react';
+import { Sparkles, LogOut, Cpu, Settings2 } from 'lucide-react';
 import { initSupabase, getSupabase } from './utils/supabaseClient';
 import Auth from './components/Auth';
 import Onboarding from './components/Onboarding';
@@ -30,6 +30,7 @@ export default function App() {
   const [view, setView] = useState<ScreenView>('AUTH');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<WritingProfile | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-oss:120b');
   
   // API loading synchronizations
   const [isInitializing, setIsInitializing] = useState(true);
@@ -202,13 +203,14 @@ export default function App() {
       }
 
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
       const response = await fetch(`${apiUrl}/api/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ posts })
+        body: JSON.stringify({ posts, model: selectedModel, provider: dynamicProvider }),
       });
 
       if (!response.ok) {
@@ -399,6 +401,22 @@ export default function App() {
             </span>
           </div>
 
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 bg-indigo-50/50 border border-indigo-100 px-3 py-1.5 rounded-lg shadow-sm">
+              <Settings2 className="w-4 h-4 text-indigo-500" />
+              <select 
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="bg-transparent border-none text-xs font-medium text-brand-espresso outline-none cursor-pointer focus:ring-0"
+              >
+                <option value="gpt-oss:120b">gpt-oss:120b (Default)</option>
+                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                <option value="llama3-8b-8192">llama3-8b-8192</option>
+                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                <option value="gemma2-9b-it">gemma2-9b-it</option>
+              </select>
+            </div>
+
           {userEmail && (
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex flex-col items-end">
@@ -418,6 +436,7 @@ export default function App() {
               </button>
             </div>
           )}
+          </div>
         </div>
       </header>
 
@@ -435,7 +454,11 @@ export default function App() {
           />
         )}
         {view === 'TOPIC_GENERATION' && profile && (
-          <TopicGenerator profile={profile} onBack={() => setView('DASHBOARD')} />
+          <TopicGenerator 
+            profile={profile} 
+            onBack={() => setView('DASHBOARD')}
+            selectedModel={selectedModel}
+          />
         )}
       </main>
 
