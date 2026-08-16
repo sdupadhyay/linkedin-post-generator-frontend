@@ -29,6 +29,7 @@ export interface WritingProfile {
 	writing_type: DnaField<string>;
 	paragraph_size: DnaField<string>;
 	emoji_frequency: DnaField<string>;
+	target_audience: DnaField<string>;
 
 	// Mapped UI properties
 	personaName: string;
@@ -741,6 +742,55 @@ export default function ProfileDashboard({
 					</div>
 					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
 						Paragraph Size: {isEditing ? editedProfile.paragraph_size.value : profile.paragraph_size.value}
+					</span>
+				</div>
+
+				{/* 7. Target Audience card */}
+				<div className="glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between">
+					<div>
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-slate-100 pb-3">
+							<div className="flex items-center gap-2.5">
+								<Target className="w-5 h-5 text-indigo-500" />
+								<h3 className="text-base font-bold text-slate-800">
+									Target Audience
+								</h3>
+							</div>
+							{renderConfidenceBadge(isEditing ? editedProfile.target_audience.confidence : profile.target_audience.confidence)}
+						</div>
+
+						<div className="space-y-3">
+							<div className="flex flex-wrap gap-1.5">
+								<span className="relative inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 capitalize">
+									<span>{isEditing ? editedProfile.target_audience.value : profile.target_audience.value}</span>
+								</span>
+							</div>
+							<div className="text-xs sm:text-[13px] text-slate-600 leading-relaxed italic mt-2 flex">
+								<span className="select-none">"</span>
+								<span
+									contentEditable={isEditing}
+									suppressContentEditableWarning
+									onBlur={(e) => {
+										if (!isEditing) return;
+										setEditedProfile({
+											...editedProfile,
+											target_audience: {
+												...editedProfile.target_audience,
+												reasoning: e.currentTarget.innerText,
+											},
+										});
+									}}
+									className={`focus:outline-none rounded px-1 -mx-1 transition-colors w-full ${
+										isEditing ? "focus:bg-slate-50/50 cursor-text hover:bg-slate-50/30" : ""
+									}`}
+								>
+									{isEditing ? editedProfile.target_audience.reasoning : profile.target_audience.reasoning}
+								</span>
+								<span className="select-none">"</span>
+							</div>
+						</div>
+					</div>
+					<span className="text-[10px] font-mono text-slate-400 mt-5 border-t border-slate-50 pt-2.5 capitalize">
+						Audience Profile
 					</span>
 				</div>
 			</div>

@@ -115,6 +115,11 @@ export default function TopicGenerator({
 				confidence: p.topic.confidence,
 				reasoning: p.topic.reasoning,
 			},
+			target_audience: p.target_audience ? {
+				value: p.target_audience.value,
+				confidence: p.target_audience.confidence,
+				reasoning: p.target_audience.reasoning,
+			} : undefined,
 		};
 	};
 
