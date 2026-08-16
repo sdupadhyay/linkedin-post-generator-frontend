@@ -164,6 +164,12 @@ export default function App() {
       confidence: res.emoji_frequency?.confidence ?? 0.8
     };
 
+    const target_audience = {
+      value: res.target_audience?.value || 'Professionals in your industry',
+      reasoning: res.target_audience?.reasoning || 'Inferred target audience based on the complexity and subject of your posts.',
+      confidence: res.target_audience?.confidence ?? 0.8
+    };
+
     // Compute fresh persona name based on fields
     const wType = (writing_type.value || '').toLowerCase();
     const toneVal = (tone.value || '').toLowerCase();
@@ -184,6 +190,7 @@ export default function App() {
       writing_type,
       paragraph_size,
       emoji_frequency,
+      target_audience,
       personaName,
       personaDescription: writing_type.reasoning
     };
