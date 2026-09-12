@@ -32,7 +32,7 @@ interface PostOutline {
 	core_thesis: string;
 	target_audience_takeaway: string;
 	narrative_arc: string[];
-	suggested_examples: string[];
+	suggested_examples: { type: "anecdote" | "prompt_for_user"; content: string }[];
 	target_lsi_keywords: string[];
 }
 
@@ -212,7 +212,7 @@ export default function TopicGenerator({
 					description:
 						t.reasoning ||
 						"Correlated topic angle matching your persona parameters.",
-					category: t.confidence >= 0.9 ? "Top Match" : "Topic Suggestion",
+					category: (t.audience_fit >= 0.9 || t.trend_relevance >= 0.9) ? "Top Match" : "Topic Suggestion",
 					difficulty:
 						idx % 3 === 0
 							? "High Engagement"
@@ -903,7 +903,8 @@ export default function TopicGenerator({
 									<ul className="list-disc pl-5 text-xs text-slate-600 space-y-1.5">
 										{(outline.suggested_examples || []).map((example, idx) => (
 											<li key={idx} className="leading-relaxed">
-												{example}
+												<span className="font-semibold text-amber-800 capitalize mr-1">[{example.type.replace(/_/g, " ")}]</span> 
+												{example.content}
 											</li>
 										))}
 									</ul>
