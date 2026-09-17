@@ -567,7 +567,7 @@ export default function App() {
         </header>
       )}
       {/* View Orchestrator */}
-      <main className="flex-grow flex flex-col justify-center py-6 relative z-10">
+      <main className="flex-grow flex flex-col justify-center relative z-10">
         {view === "AUTH" && <Auth />}
         {view === "ONBOARDING" && (
           <Onboarding onSubmitPosts={handleOnboardingSubmit} />
