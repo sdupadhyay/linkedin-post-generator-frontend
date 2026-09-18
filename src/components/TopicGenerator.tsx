@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import TopicLoadingScreen from "./TopicLoadingScreen";
 import OutlineLoadingScreen from "./OutlineLoadingScreen";
+import PostLoadingScreen from "./PostLoadingScreen";
 import {
 	Lightbulb,
 	ChevronLeft,
@@ -444,6 +445,10 @@ export default function TopicGenerator({
 		return <OutlineLoadingScreen />;
 	}
 
+	if (isGeneratingPost) {
+		return <PostLoadingScreen />;
+	}
+
 	return (
 		<div className="min-h-[100vh] bg-gradient-to-br from-white via-[#f4fcf8] to-[#00bb7f]/20 font-sans p-6 pb-32 -mx-4 sm:-mx-6 lg:-mx-8">
 			<div className="relative max-w-[1200px] mx-auto z-10 animate-fade-in-up">
@@ -485,24 +490,6 @@ export default function TopicGenerator({
 					</button>
 				)}
 
-			{/* Post Generation Loading State */}
-			{isGeneratingPost && (
-				<div className="mt-8 glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center animate-fade-in-up border border-indigo-500/10 shadow-sm">
-					<div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-150 flex items-center justify-center mb-4">
-						<Sparkles
-							className="w-6 h-6 text-indigo-600 animate-spin"
-							style={{ animationDuration: "3s" }}
-						/>
-					</div>
-					<h3 className="text-base font-bold text-slate-800 mb-1">
-						Ghostwriting LinkedIn Post...
-					</h3>
-					<p className="text-xs text-slate-500 max-w-sm">
-						Groq Llama 3 engine is composing your post based on the approved
-						outline, your writing DNA profile, and your steering feedback.
-					</p>
-				</div>
-			)}
 
 			{/* Step 1: Choose or Write a Topic */}
 			{step === "topics" && !isLoading && !isGeneratingOutline && (
@@ -654,219 +641,210 @@ export default function TopicGenerator({
 				</div>
 			)}
 
-			{/* Step 2: Customize Outline & Add Steering Feedback */}
-			{step === "outline" && outline && !isGeneratingPost && (
-				<div className="space-y-6 animate-fade-in-up">
-					<div className="glass-card rounded-2xl p-6 md:p-8 border border-indigo-100/50 relative overflow-hidden">
-						<div className="radial-glow -top-1/4 -right-1/4 w-72 h-72 opacity-30 pointer-events-none" />
-
-						<div className="border-b border-slate-100 pb-4 mb-5">
-							<span className="text-[10px] font-mono tracking-widest uppercase bg-indigo-50 px-2.5 py-1 rounded border border-indigo-100 text-indigo-700 font-semibold">
-								AI Structure Outline
-							</span>
-							<h2 className="text-xl font-bold text-slate-800 mt-2">
-								Content Strategy & Theme
-							</h2>
-						</div>
-
-						<div className="space-y-5">
-							{/* Core Thesis */}
-							<div>
-								<h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1">
-									Core Thesis
-								</h4>
-								<p className="text-sm text-slate-700 leading-relaxed font-semibold bg-indigo-50/20 p-3.5 rounded-xl border border-indigo-50/50">
-									{outline.core_thesis}
-								</p>
+				{/* Step 2: Customize Outline & Add Steering Feedback */}
+				{step === "outline" && outline && !isGeneratingPost && (
+					<div className="space-y-6 animate-fade-in-up w-full max-w-[900px] mx-auto pb-20 mt-4">
+						{/* Core Thesis */}
+						<div className="bg-white rounded-[16px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100">
+							<div className="flex items-center gap-3 mb-4">
+								<Lightbulb className="w-5 h-5 text-[#5B5BFF]" />
+								<h3 className="text-[17px] font-bold text-slate-900">Core Thesis</h3>
 							</div>
-
-							{/* Narrative Arc */}
-							<div>
-								<h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-2">
-									Narrative Arc (Logical Flow)
-								</h4>
-								<div className="relative pl-6 space-y-3 border-l-2 border-indigo-100/60 ml-2">
-									{(outline.narrative_arc || []).map((stepText, idx) => (
-										<div key={idx} className="relative">
-											{/* Visual bullet circle */}
-											<div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-white border-2 border-indigo-400 flex items-center justify-center text-[8px] font-bold text-indigo-600 shadow-sm">
-												{idx + 1}
-											</div>
-											<p className="text-sm text-slate-600 leading-relaxed">
-												{stepText}
-											</p>
-										</div>
-									))}
-								</div>
-							</div>
-
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-100/80">
-								{/* Suggested Examples */}
-								<div className="space-y-2">
-									<h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">
-										Suggested Elements & Examples
-									</h4>
-										<ul className="list-disc pl-5 text-xs text-slate-600 space-y-1.5">
-											{(outline.suggested_examples || []).map((example: any, idx: number) => {
-												const isObject = typeof example === 'object' && example !== null;
-												const typeStr = isObject && example.type ? `[${example.type.replace(/_/g, " ")}] ` : "";
-												const contentStr = isObject ? example.content : example;
-												
-												return (
-													<li key={idx} className="leading-relaxed">
-														{typeStr && <span className="font-semibold text-amber-800 capitalize mr-1">{typeStr}</span>}
-														{contentStr}
-													</li>
-												);
-											})}
-										</ul>
-								</div>
-
-								{/* LSI Keywords */}
-								<div className="space-y-2">
-									<h4 className="text-xs font-bold text-cyan-700 uppercase tracking-wider mb-1">
-										SEO LSI Keywords (To naturalize)
-									</h4>
-									<div className="flex flex-wrap gap-1.5">
-										{(outline.target_lsi_keywords || []).map((kw, idx) => (
-											<span
-												key={idx}
-												className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700"
-											>
-												#{kw}
-											</span>
-										))}
-									</div>
-								</div>
-							</div>
-
-							{/* Target Audience Takeaway */}
-							<div className="border-t border-slate-100 pt-4 mt-2">
-								<h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">
-									Target Audience Takeaway
-								</h4>
-								<p className="text-xs text-slate-600 leading-relaxed italic">
-									"{outline.target_audience_takeaway}"
-								</p>
-							</div>
-						</div>
-					</div>
-
-					{/* Steering Feedback Section */}
-					<div className="glass-card rounded-2xl p-6 border border-purple-100/50 space-y-3">
-						<div>
-							<h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-								<Sparkles className="w-4 h-4 text-purple-500 animate-pulse" />
-								<span>Steering Feedback & Customizations</span>
-							</h3>
-							<p className="text-[11px] text-slate-500">
-								Guide the generator on specific elements, case studies, word
-								choices, or focus areas (optional).
+							<p className="text-[15px] text-slate-700 leading-relaxed font-medium">
+								{outline.core_thesis}
 							</p>
 						</div>
 
-						<textarea
-							value={feedback}
-							onChange={(e) => setFeedback(e.target.value)}
-							placeholder="e.g. Focus more on our recent 10x customer growth metric. Make the tone highly action-oriented and use a slightly shorter conclusion."
-							className="w-full min-h-[90px] p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all leading-relaxed placeholder-slate-400"
-						/>
-					</div>
+						{/* Target Audience Takeaway */}
+						<div className="bg-[#5B5BFF]/[0.04] rounded-[16px] p-8 border border-[#5B5BFF]/10">
+							<h4 className="text-[11px] font-black text-[#5B5BFF] uppercase tracking-widest mb-3">
+								Target Audience Takeaway
+							</h4>
+							<p className="text-[14px] text-slate-700 leading-relaxed font-medium">
+								{outline.target_audience_takeaway}
+							</p>
+						</div>
 
-					{/* Action buttons */}
-					<div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6">
-						<button
-							onClick={() => setStep("topics")}
-							className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
-						>
-							<ChevronLeft className="w-4 h-4 mr-1" />
-							<span>Back to Suggested Topics</span>
-						</button>
+						{/* Narrative Arc */}
+						<div className="pt-6">
+							<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+								Narrative Arc
+							</h4>
+							<div className="space-y-4">
+								{(outline.narrative_arc || []).map((stepText, idx) => {
+									const parts = stepText.split(':');
+									const hasTitle = parts.length > 1;
+									const title = hasTitle ? parts[0].trim() : `Phase ${idx + 1}`;
+									const desc = hasTitle ? parts.slice(1).join(':').trim() : stepText;
 
-						<button
-							onClick={handleGeneratePostDraft}
-							disabled={isGeneratingPost}
-							className="inline-flex items-center justify-center py-3.5 px-8 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-cyan-500 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-sm transition-all duration-300 shadow-lg shadow-purple-600/10 hover:shadow-purple-600/25 border border-purple-500/20 cursor-pointer"
-						>
-							<Sparkles className="w-4 h-4 mr-2 text-yellow-200" />
-							<span>Ghostwrite LinkedIn Post</span>
-						</button>
+									return (
+										<div key={idx} className="bg-white rounded-[16px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100 flex items-start gap-5">
+											<div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#5B5BFF]/10 flex items-center justify-center text-[13px] font-black text-[#5B5BFF]">
+												{idx + 1}
+											</div>
+											<div className="pt-0.5">
+												<h5 className="text-[15px] font-bold text-slate-900 mb-1">{title}</h5>
+												<p className="text-[14px] text-slate-600 font-medium leading-relaxed">{desc}</p>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+
+						{/* Suggested Examples (If present) */}
+						{outline.suggested_examples && outline.suggested_examples.length > 0 && (
+							<div className="pt-6">
+								<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+									Suggested Examples
+								</h4>
+								<div className="grid grid-cols-1 gap-4">
+									{outline.suggested_examples.map((example: any, idx: number) => {
+										const isObject = typeof example === 'object' && example !== null;
+										const typeStr = isObject && example.type ? example.type.replace(/_/g, " ") : "";
+										const contentStr = isObject ? example.content : example;
+										return (
+											<div key={idx} className="bg-white rounded-[16px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100 flex items-start gap-4">
+												<div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-[13px] font-black text-amber-600">
+													*
+												</div>
+												<div className="pt-0.5">
+													{typeStr && <h5 className="text-[14px] font-bold text-slate-900 mb-1 capitalize">{typeStr}</h5>}
+													<p className="text-[14px] text-slate-600 font-medium leading-relaxed">{contentStr}</p>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						)}
+
+						{/* Target Keywords */}
+						<div className="pt-6">
+							<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+								Target Keywords
+							</h4>
+							<div className="flex flex-wrap gap-2.5 px-2">
+								{(outline.target_lsi_keywords || []).map((kw, idx) => (
+									<span
+										key={idx}
+										className="text-[13px] font-medium px-4 py-1.5 rounded-full bg-[#5B5BFF]/[0.04] border border-[#5B5BFF]/20 text-[#5B5BFF]"
+									>
+										{kw}
+									</span>
+								))}
+							</div>
+						</div>
+
+						{/* Refinement Feedback & Generate Button */}
+						<div className="pt-10 border-t border-slate-100/50 mt-10">
+							<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+								Refinement Feedback
+							</h4>
+							<div className="bg-white rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-200 overflow-hidden">
+								<textarea
+									value={feedback}
+									onChange={(e) => setFeedback(e.target.value)}
+									placeholder="Add specific instructions to refine this outline (optional)..."
+									className="w-full min-h-[140px] p-6 text-[15px] text-slate-700 bg-transparent focus:outline-none resize-none placeholder-slate-400 font-medium"
+								/>
+							</div>
+
+							<div className="mt-8 flex justify-end gap-4">
+								<button
+									onClick={() => {
+										setOutline(null);
+										setFeedback("");
+										setStep("topics");
+									}}
+									className="inline-flex items-center justify-center py-3.5 px-8 rounded-xl font-bold text-[14px] bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+								>
+									Back to Topics
+								</button>
+								<button
+									onClick={handleGeneratePostDraft}
+									disabled={isGeneratingPost}
+									className="inline-flex items-center justify-center py-3.5 px-10 rounded-xl font-bold text-[14px] transition-all duration-300 cursor-pointer bg-[#00bb7f] hover:bg-[#007956] text-white shadow-[0_8px_20px_rgba(0,187,127,0.3)] hover:shadow-[0_10px_25px_rgba(0,121,86,0.35)] hover:-translate-y-0.5"
+								>
+									Generate LinkedIn Post
+								</button>
+							</div>
+						</div>
 					</div>
-				</div>
-			)}
+				)}
 
 			{/* Step 3: Generated Post Output Display */}
 			{step === "post" && generatedPost && !isGeneratingPost && (
-				<div className="space-y-6 animate-fade-in-up">
-					<div className="glass-card rounded-2xl p-6 md:p-8 border border-indigo-500/25 shadow-md relative">
-						<div className="radial-glow top-0 right-0 w-48 h-48 opacity-40 pointer-events-none" />
-
-						<div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-							<div className="flex items-center gap-2">
-								<div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600">
-									<FileText className="w-4 h-4" />
+				<div className="space-y-6 animate-fade-in-up w-full max-w-[900px] mx-auto pb-20 mt-4">
+					<div className="bg-white rounded-[24px] p-8 md:p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 relative">
+						
+						{/* Header area */}
+						<div className="flex items-center justify-between border-b border-slate-100 pb-6 mb-6">
+							<div className="flex items-center gap-4">
+								<div className="w-12 h-12 rounded-full bg-[#00bb7f]/10 flex items-center justify-center">
+									<FileText className="w-5 h-5 text-[#00bb7f]" />
 								</div>
 								<div>
-									<h3 className="text-sm font-bold text-slate-800">
-										Generated LinkedIn Draft
+									<h3 className="text-[19px] font-extrabold text-slate-900">
+										Your Ready-to-Publish Post
 									</h3>
-									<p className="text-[10px] text-slate-500">
-										Formulated in your custom tone
+									<p className="text-[13px] font-medium text-slate-500 mt-1">
+										Ghostwritten using your custom brand DNA
 									</p>
 								</div>
 							</div>
 
 							<button
 								onClick={handleCopyToClipboard}
-								className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+								className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-[12px] font-bold text-[14px] transition-all cursor-pointer ${
 									copied
-										? "bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm"
-										: "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-800"
+										? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+										: "bg-[#00bb7f] hover:bg-[#007956] text-white shadow-[0_4px_15px_rgba(0,187,127,0.25)] hover:-translate-y-0.5"
 								}`}
 							>
 								{copied ? (
 									<>
-										<CheckCheck className="w-3.5 h-3.5" />
+										<CheckCheck className="w-4 h-4" />
 										<span>Copied!</span>
 									</>
 								) : (
 									<>
-										<Copy className="w-3.5 h-3.5" />
-										<span>Copy to Clipboard</span>
+										<Copy className="w-4 h-4" />
+										<span>Copy Post</span>
 									</>
 								)}
 							</button>
 						</div>
 
 						{/* Draft text area box */}
-						<div className="p-4 rounded-xl bg-slate-50 border border-slate-100 min-h-[150px] font-sans text-sm text-slate-700 leading-relaxed whitespace-pre-wrap select-text">
+						<div className="font-sans text-[16px] text-slate-800 leading-[1.8] whitespace-pre-wrap select-text px-2 py-4 font-medium">
 							{generatedPost}
 						</div>
 					</div>
 
 					{/* Return/Adjust actions */}
-					<div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6">
+					<div className="flex items-center justify-between pt-4 px-2">
 						<button
 							onClick={() => setStep("outline")}
-							className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
+							className="inline-flex items-center justify-center py-3.5 px-6 rounded-xl font-bold text-[14px] text-slate-500 hover:text-slate-800 transition-colors cursor-pointer group"
 						>
-							<ChevronLeft className="w-4 h-4 mr-1" />
-							<span>Adjust Feedback & Regenerate</span>
+							<ChevronLeft className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" />
+							<span>Back to Steering</span>
 						</button>
 
 						<button
 							onClick={() => {
 								setOutline(null);
-								setFeedback("");
 								setGeneratedPost(null);
+								setFeedback("");
 								setCustomTitle("");
 								setCustomReasoning("");
 								setCustomTopic(null);
 								setStep("topics");
 							}}
-							className="inline-flex items-center justify-center py-2.5 px-5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-650 font-semibold text-xs transition-all cursor-pointer"
+							className="inline-flex items-center justify-center py-3.5 px-8 rounded-[14px] font-bold text-[14px] bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
 						>
-							<span>Select Another Topic</span>
+							Start a New Topic
 						</button>
 					</div>
 				</div>
