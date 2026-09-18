@@ -31,6 +31,9 @@ type ScreenView =
   | "DASHBOARD"
   | "TOPIC_GENERATION";
 
+import OutlineLoadingScreen from "./components/OutlineLoadingScreen";
+const TESTING_TOPIC_LOADING_SCREEN = false;
+
 export default function App() {
   const [view, setView] = useState<ScreenView>("AUTH");
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -517,6 +520,10 @@ export default function App() {
         </button>
       </div>
     );
+  }
+
+  if (TESTING_TOPIC_LOADING_SCREEN) {
+    return <OutlineLoadingScreen />;
   }
 
   return (

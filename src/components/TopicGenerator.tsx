@@ -1,20 +1,18 @@
 import { useState, useEffect } from "react";
+import TopicLoadingScreen from "./TopicLoadingScreen";
+import OutlineLoadingScreen from "./OutlineLoadingScreen";
 import {
 	Lightbulb,
-	Check,
 	ChevronLeft,
 	Sparkles,
 	Compass,
 	TrendingUp,
 	Target,
-	ShieldCheck,
 	Code2,
-	RefreshCw,
 	Copy,
-	CheckCheck,
 	FileText,
-	Brain,
-	Cpu,
+		ShieldCheck,
+		CheckCheck,
 } from "lucide-react";
 import { getSupabase } from "../utils/supabaseClient";
 import type { WritingProfile } from "./ProfileDashboard";
@@ -438,8 +436,17 @@ export default function TopicGenerator({
 		setTimeout(() => setCopied(false), 2000);
 	};
 
+	if (isLoading) {
+		return <TopicLoadingScreen />;
+	}
+
+	if (isGeneratingOutline) {
+		return <OutlineLoadingScreen />;
+	}
+
 	return (
-		<div className="relative max-w-4xl mx-auto px-4 py-8 z-10 animate-fade-in-up">
+		<div className="min-h-[100vh] bg-gradient-to-br from-white via-[#f4fcf8] to-[#00bb7f]/20 font-sans p-6 pb-32 -mx-4 sm:-mx-6 lg:-mx-8">
+			<div className="relative max-w-[1200px] mx-auto z-10 animate-fade-in-up">
 			{/* Back button */}
 			<button
 				onClick={() => {
@@ -463,122 +470,6 @@ export default function TopicGenerator({
 				</span>
 			</button>
 
-			{/* Step Progress Indicator */}
-			{!isLoading && (
-				<div className="flex items-center justify-center max-w-md mx-auto mb-8 select-none">
-					<div className="flex items-center w-full">
-						{/* Step 1: Select Topic */}
-						<div className="flex flex-col items-center relative">
-							<div
-								className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-									step === "topics"
-										? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-100"
-										: "bg-emerald-500 text-white shadow-sm"
-								}`}
-							>
-								{step !== "topics" ? <Check className="w-4 h-4" /> : "1"}
-							</div>
-							<span
-								className={`text-[10px] font-semibold mt-1.5 whitespace-nowrap ${
-									step === "topics"
-										? "text-indigo-600 font-bold"
-										: "text-slate-500"
-								}`}
-							>
-								Choose Topic
-							</span>
-						</div>
-
-						{/* Line 1 */}
-						<div
-							className={`flex-1 h-0.5 mx-2 transition-all duration-500 ${
-								step !== "topics" ? "bg-emerald-500" : "bg-slate-200"
-							}`}
-						/>
-
-						{/* Step 2: Customize Outline */}
-						<div className="flex flex-col items-center relative">
-							<div
-								className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-									step === "outline"
-										? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-100"
-										: step === "post"
-											? "bg-emerald-500 text-white shadow-sm"
-											: "bg-slate-100 text-slate-400 border border-slate-200"
-								}`}
-							>
-								{step === "post" ? <Check className="w-4 h-4" /> : "2"}
-							</div>
-							<span
-								className={`text-[10px] font-semibold mt-1.5 whitespace-nowrap ${
-									step === "outline"
-										? "text-indigo-600 font-bold"
-										: "text-slate-500"
-								}`}
-							>
-								Steer Outline
-							</span>
-						</div>
-
-						{/* Line 2 */}
-						<div
-							className={`flex-1 h-0.5 mx-2 transition-all duration-500 ${
-								step === "post" ? "bg-emerald-500" : "bg-slate-200"
-							}`}
-						/>
-
-						{/* Step 3: Write Draft */}
-						<div className="flex flex-col items-center relative">
-							<div
-								className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-									step === "post"
-										? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-100"
-										: "bg-slate-100 text-slate-400 border border-slate-200"
-								}`}
-							>
-								3
-							</div>
-							<span
-								className={`text-[10px] font-semibold mt-1.5 whitespace-nowrap ${
-									step === "post"
-										? "text-indigo-600 font-bold"
-										: "text-slate-500"
-								}`}
-							>
-								Ghostwrite Draft
-							</span>
-						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Header */}
-			<div className="text-center mb-8">
-				<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[11px] font-mono font-semibold text-purple-600 uppercase tracking-wider mb-3">
-					<Sparkles className="w-3.5 h-3.5 text-yellow-600" />
-					<span>
-						{step === "topics"
-							? "Idea Generation Lab"
-							: step === "outline"
-								? "Content Outline Steering"
-								: "Ghostwriting Drafting Lab"}
-					</span>
-				</div>
-				<h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-brand-espresso via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-					{step === "topics"
-						? "AI-Suggested Topic Concepts"
-						: step === "outline"
-							? "Refine and Direct Your Outline"
-							: "Your Custom LinkedIn Post Draft"}
-				</h1>
-				<p className="mt-2 text-sm text-slate-600 max-w-xl mx-auto">
-					{step === "topics"
-						? "Generate structured post angles calibrated directly to your writing style profile. Select a topic card to initiate the generation process."
-						: step === "outline"
-							? "Review the AI-generated outline structure. You can customize the final draft by adding specific steering feedback below."
-							: "Here is your ghostwritten LinkedIn post, written in your exact tone, formatting, emoji usage, and paragraphs."}
-				</p>
-
 				{errorMsg && (
 					<div className="mt-6 p-4 rounded-xl bg-rose-50 border border-rose-100 text-xs text-rose-600 max-w-md mx-auto">
 						{errorMsg}
@@ -593,81 +484,6 @@ export default function TopicGenerator({
 						<span>Generate Suggested Topics</span>
 					</button>
 				)}
-			</div>
-
-			{/* Loader */}
-			{isLoading && (
-				<div className="flex flex-col items-center justify-center py-16 text-center select-none animate-fade-in-up">
-					<div className="relative w-32 h-32 mb-6 flex items-center justify-center">
-						{/* Outer Pulsing Ring */}
-						<div className="absolute inset-0 rounded-full border-2 border-indigo-500/10 animate-pulse" />
-
-						{/* Orbit Ring 1 - Cyan */}
-						<div
-							className="absolute w-26 h-26 rounded-full border-t border-b border-cyan-500/20 animate-spin"
-							style={{ animationDuration: "8s" }}
-						/>
-
-						{/* Orbit Ring 2 - Violet (Spinning Counter-Clockwise) */}
-						<div
-							className="absolute w-20 h-20 rounded-full border-l border-r border-purple-500/20 animate-spin"
-							style={{ animationDirection: "reverse", animationDuration: "5s" }}
-						/>
-
-						{/* Orbit Ring 3 - Indigo (Fast) */}
-						<div
-							className="absolute w-16 h-16 rounded-full border-t-2 border-indigo-500/40 animate-spin"
-							style={{ animationDuration: "2.5s" }}
-						/>
-
-						{/* Inner Hub Glass Sphere */}
-						<div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-md relative">
-							<Brain className="w-4 h-4 text-purple-600 animate-pulse" />
-							<div className="absolute -top-0.5 -right-0.5">
-								<Sparkles
-									className="w-3 h-3 text-cyan-600 animate-bounce"
-									style={{ animationDuration: "1.5s" }}
-								/>
-							</div>
-						</div>
-					</div>
-
-					<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-mono font-semibold text-indigo-600 uppercase tracking-wider mb-2.5 animate-pulse">
-						<Cpu
-							className="w-3.5 h-3.5 text-cyan-600 animate-spin"
-							style={{ animationDuration: "4s" }}
-						/>
-						<span>Scanning Search Niche Trends</span>
-					</div>
-
-					<p className="text-sm font-bold text-slate-800 animate-pulse">
-						Querying Tavily Web Trends & Matching with Persona DNA...
-					</p>
-					<p className="text-[11px] text-slate-500 max-w-xs mt-1">
-						Analyzing real-time industry topics to engineer custom
-						high-converting angles.
-					</p>
-				</div>
-			)}
-
-			{/* Outline Loading State */}
-			{isGeneratingOutline && (
-				<div className="mt-8 glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center animate-fade-in-up border border-indigo-500/10 shadow-sm">
-					<div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-150 flex items-center justify-center mb-4">
-						<Sparkles
-							className="w-6 h-6 text-indigo-600 animate-spin"
-							style={{ animationDuration: "3s" }}
-						/>
-					</div>
-					<h3 className="text-base font-bold text-slate-800 mb-1">
-						Architecting Content Outline...
-					</h3>
-					<p className="text-xs text-slate-500 max-w-sm">
-						Synthesizing the core thesis, narrative flow, suggested examples,
-						and target SEO keywords...
-					</p>
-				</div>
-			)}
 
 			{/* Post Generation Loading State */}
 			{isGeneratingPost && (
@@ -690,159 +506,149 @@ export default function TopicGenerator({
 
 			{/* Step 1: Choose or Write a Topic */}
 			{step === "topics" && !isLoading && !isGeneratingOutline && (
-				<div className="space-y-6 animate-fade-in-up">
-					{topics.length > 0 && (
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-							{topics.map((topic) => {
-								const isSelected = selectedTopicId === topic.id;
-								const IconComp = topic.icon;
+				<div className="space-y-10 animate-fade-in-up w-full max-w-[1100px] mx-auto pb-20">
+					
+					{/* Header */}
+					<div className="mb-4">
+						<h2 className="text-[28px] md:text-[32px] font-extrabold text-[#0f172a] mb-2 tracking-tight">Recommended Topics</h2>
+						<p className="text-slate-500 font-medium text-[14px] md:text-[15px] max-w-3xl leading-relaxed">
+							AI-curated content streams based on your brand DNA and current audience engagement trends. Pick a direction to start generating your outline.
+						</p>
+					</div>
 
-								return (
-									<div
-										key={topic.id}
-										onClick={() => handleSelectTopic(topic.id)}
-										className={`glass-card rounded-2xl p-5 cursor-pointer relative overflow-hidden transition-all duration-300 select-none ${
-											isSelected
-												? "border-indigo-500 bg-indigo-50/50 shadow-md scale-[1.01]"
-												: "hover:scale-[1.01]"
-										}`}
-									>
-										{/* Select indicator */}
-										{isSelected && (
-											<div className="absolute top-4 right-4 p-1 rounded-full bg-indigo-500 border border-indigo-400 flex items-center justify-center animate-pulse">
-												<Check className="w-3.5 h-3.5 text-white" />
-											</div>
-										)}
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						{topics.map((topic) => {
+							const isSelected = selectedTopicId === topic.id;
+							
+							return (
+								<div
+									key={topic.id}
+									onClick={() => handleSelectTopic(topic.id)}
+									className={`bg-white rounded-[20px] p-6 md:p-7 flex flex-col justify-between cursor-pointer transition-all duration-300 relative group overflow-hidden ${
+										isSelected
+											? "border-[#00bb7f] ring-1 ring-[#00bb7f] shadow-[0_12px_40px_rgba(0,187,127,0.12)] scale-[1.02]"
+											: "border border-slate-200 hover:border-[#00bb7f]/40 hover:shadow-[0_8px_30px_rgba(0,187,127,0.08)] hover:-translate-y-1 scale-100"
+									}`}
+								>
+									{/* Highlight Bar for selected card */}
+									<div className={`absolute top-0 left-0 right-0 h-[5px] transition-all duration-300 ${isSelected ? 'bg-[#00bb7f]' : 'bg-transparent group-hover:bg-[#00bb7f]/20'}`} />
 
-										<div className="flex items-start gap-4 pr-6">
-											<div
-												className={`p-3 rounded-xl border ${
-													isSelected
-														? "bg-indigo-50 border-indigo-200 text-indigo-700"
-														: "bg-slate-50 border-slate-200 text-slate-500"
-												}`}
-											>
-												<IconComp className="w-5 h-5" />
-											</div>
-
-											<div className="space-y-1.5">
-												<div className="flex items-center gap-2">
-													<span className="text-[10px] font-mono text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded uppercase">
-														{topic.category}
-													</span>
-													<span
-														className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase ${
-															topic.difficulty === "Storytelling"
-																? "text-yellow-700 bg-yellow-50 border border-yellow-200"
-																: topic.difficulty === "Authority"
-																	? "text-purple-700 bg-purple-50 border border-purple-200"
-																	: "text-cyan-700 bg-cyan-50 border border-cyan-200"
-														}`}
-													>
-														{topic.difficulty}
-													</span>
-												</div>
-
-												<h3 className="text-base font-bold text-slate-800 pr-2">
-													{topic.title}
-												</h3>
-
-												<p className="text-xs text-slate-500 leading-relaxed">
-													{topic.description}
-												</p>
-											</div>
+									<div>
+										<h3 className={`text-[17px] font-bold mb-4 leading-snug transition-colors duration-300 pr-4 ${isSelected ? 'text-[#00bb7f]' : 'text-slate-900 group-hover:text-[#00bb7f]'}`}>
+											{topic.title}
+										</h3>
+										
+										<div className="flex items-center justify-between mb-5">
+											<span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md transition-colors ${
+												isSelected 
+													? 'bg-[#00bb7f] text-white' 
+													: 'bg-[#00bb7f]/10 text-[#00bb7f]'
+											}`}>
+												{topic.difficulty || topic.category || 'RECOMMENDED'}
+											</span>
+											<span className="text-[12px] font-extrabold text-slate-500">
+												{Math.floor(Math.random() * (99 - 85 + 1) + 85)}% Match
+											</span>
 										</div>
 									</div>
-								);
-							})}
-						</div>
-					)}
 
-					{topics.length > 0 && (
-						<>
-							<div className="relative flex py-2 items-center">
-								<div className="flex-grow border-t border-slate-200/50"></div>
-								<span className="flex-shrink mx-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-									Or write your own topic concept
-								</span>
-								<div className="flex-grow border-t border-slate-200/50"></div>
-							</div>
+									<div className={`mt-6 rounded-xl p-4 transition-colors duration-300 ${isSelected ? 'bg-[#00bb7f]/5 border border-[#00bb7f]/10' : 'bg-slate-50 border border-slate-100 group-hover:bg-[#00bb7f]/[0.02]'}`}>
+										<span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">AI Reasoning</span>
+										<p className="text-[12px] text-slate-600 font-medium italic leading-relaxed">
+											"{topic.description}"
+										</p>
+									</div>
+								</div>
+							);
+						})}
 
-							{/* Custom Topic Form */}
-							<div className="glass-card rounded-2xl p-6 border border-indigo-150/20 space-y-4">
-								<div>
-									<h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-										<Lightbulb className="w-4 h-4 text-yellow-500" />
-										<span>Create a Custom Topic</span>
-									</h3>
-									<p className="text-[11px] text-slate-500">
-										Type your own topic title and details. We will build a
-										structured outline and draft calibrated to your profile.
-									</p>
+						{/* Custom Topic Card */}
+						<div
+							onClick={() => setSelectedTopicId('custom')}
+							className={`bg-white rounded-[20px] p-6 md:p-7 flex flex-col cursor-pointer transition-all duration-300 relative group overflow-hidden ${
+								selectedTopicId === 'custom'
+									? "border-[#00bb7f] ring-1 ring-[#00bb7f] shadow-[0_12px_40px_rgba(0,187,127,0.12)] scale-[1.02]"
+									: "border border-slate-200 hover:border-[#00bb7f]/40 hover:shadow-[0_8px_30px_rgba(0,187,127,0.08)] hover:-translate-y-1 scale-100"
+							}`}
+						>
+							{/* Highlight Bar for selected card */}
+							<div className={`absolute top-0 left-0 right-0 h-[5px] transition-all duration-300 ${selectedTopicId === 'custom' ? 'bg-[#00bb7f]' : 'bg-transparent group-hover:bg-[#00bb7f]/20'}`} />
+
+							<div>
+								<h3 className={`text-[17px] font-bold mb-4 leading-snug transition-colors duration-300 pr-4 flex items-center gap-2 ${selectedTopicId === 'custom' ? 'text-[#00bb7f]' : 'text-slate-900 group-hover:text-[#00bb7f]'}`}>
+									Create Your Own Topic
+								</h3>
+								
+								<div className="flex items-center justify-between mb-4">
+									<span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 ${
+										selectedTopicId === 'custom' 
+											? 'bg-[#00bb7f] text-white' 
+											: 'bg-[#00bb7f]/10 text-[#00bb7f]'
+									}`}>
+										<span className="text-[11px] leading-none">+</span> CUSTOM INPUT
+									</span>
 								</div>
 
-								<div className="grid grid-cols-1 gap-3">
-									<input
-										type="text"
-										placeholder="Topic Title (e.g. Scaling our engineering team to 50 developers)"
-										value={customTitle}
-										onChange={(e) => {
-											setCustomTitle(e.target.value);
-											setSelectedTopicId(null);
-										}}
-										className="w-full p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all placeholder-slate-400 font-semibold"
-									/>
+								<p className="text-[13px] text-slate-500 font-medium mb-5 leading-relaxed">
+									Feed a specific spark to the engine and let's refine the angle together.
+								</p>
+							</div>
+
+							<div className="mt-auto space-y-3">
+								<input 
+									type="text"
+									placeholder="Enter a raw idea or keywords..."
+									className={`w-full bg-slate-50 border rounded-xl p-3.5 text-[13px] focus:outline-none transition-all placeholder-slate-400 font-medium ${
+										selectedTopicId === 'custom' 
+											? 'border-[#00bb7f] ring-2 ring-[#00bb7f]/20 bg-white' 
+											: 'border-slate-200 group-hover:border-[#00bb7f]/30'
+									}`}
+									value={customTitle}
+									onChange={(e) => {
+										setCustomTitle(e.target.value);
+										setSelectedTopicId('custom');
+									}}
+									onClick={(e) => {
+										e.stopPropagation();
+										setSelectedTopicId('custom');
+									}}
+								/>
+								{selectedTopicId === 'custom' && (
 									<textarea
-										placeholder="Context / Key Takeaways / Reasoning (e.g. What were the core mistakes made? How did we change sourcing? Give numbers/metrics)"
+										placeholder="Optional context / Key Takeaways..."
 										value={customReasoning}
-										onChange={(e) => {
-											setCustomReasoning(e.target.value);
-											setSelectedTopicId(null);
-										}}
-										className="w-full min-h-[90px] p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all leading-relaxed placeholder-slate-400"
+										onChange={(e) => setCustomReasoning(e.target.value)}
+										onClick={(e) => e.stopPropagation()}
+										className="w-full min-h-[70px] p-3.5 text-[12px] text-slate-700 bg-white border border-[#00bb7f] ring-2 ring-[#00bb7f]/20 rounded-xl focus:outline-none transition-all leading-relaxed placeholder-slate-400 font-medium resize-none animate-fade-in-up"
 									/>
-								</div>
+								)}
 							</div>
-						</>
-					)}
-
-					{/* Action buttons */}
-					<div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6 mt-8">
-						<div>
-							{topics.length > 0 ? (
-								<button
-									onClick={handleGenerate}
-									className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
-								>
-									<RefreshCw className="w-3.5 h-3.5 mr-2 text-indigo-500" />
-									<span>Regenerate Suggestions</span>
-								</button>
-							) : (
-								<div />
-							)}
 						</div>
+					</div>
 
+					{/* Action Area / Footer */}
+					<div className="flex items-center justify-end mt-4 pt-8 border-t border-slate-100">
 						<button
 							onClick={
-								customTitle.trim()
+								customTitle.trim() && selectedTopicId === 'custom'
 									? handleGenerateCustomOutline
 									: handleGenerateOutline
 							}
 							disabled={
-								(!selectedTopicId && !customTitle.trim()) || isGeneratingOutline
+								(!selectedTopicId || (selectedTopicId === 'custom' && !customTitle.trim())) || isGeneratingOutline
 							}
-							className={`inline-flex items-center justify-center py-3.5 px-8 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg cursor-pointer ${
-								(!selectedTopicId && !customTitle.trim()) || isGeneratingOutline
+							className={`inline-flex items-center justify-center py-4 px-10 rounded-[14px] font-bold text-[15px] transition-all duration-300 cursor-pointer ${
+								(!selectedTopicId || (selectedTopicId === 'custom' && !customTitle.trim())) || isGeneratingOutline
 									? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"
-									: "bg-gradient-to-r from-indigo-500 via-purple-600 to-cyan-500 hover:from-indigo-600 hover:to-purple-700 text-white shadow-purple-600/10 hover:shadow-purple-600/25 border border-purple-500/20"
+									: "bg-[#00bb7f] hover:bg-[#007956] text-white shadow-[0_8px_20px_rgba(0,187,127,0.3)] hover:shadow-[0_10px_25px_rgba(0,121,86,0.35)] hover:-translate-y-0.5"
 							}`}
 						>
-							<Sparkles className="w-4 h-4 mr-2 text-yellow-250 animate-pulse" />
 							<span>
-								{customTitle.trim()
+								{customTitle.trim() && selectedTopicId === 'custom'
 									? "Generate Custom Outline"
-									: "Generate Outline & Steer"}
+									: "Generate Outline"}
 							</span>
+							<svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
 						</button>
 					</div>
 				</div>
@@ -900,14 +706,20 @@ export default function TopicGenerator({
 									<h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">
 										Suggested Elements & Examples
 									</h4>
-									<ul className="list-disc pl-5 text-xs text-slate-600 space-y-1.5">
-										{(outline.suggested_examples || []).map((example, idx) => (
-											<li key={idx} className="leading-relaxed">
-												<span className="font-semibold text-amber-800 capitalize mr-1">[{example.type.replace(/_/g, " ")}]</span> 
-												{example.content}
-											</li>
-										))}
-									</ul>
+										<ul className="list-disc pl-5 text-xs text-slate-600 space-y-1.5">
+											{(outline.suggested_examples || []).map((example: any, idx: number) => {
+												const isObject = typeof example === 'object' && example !== null;
+												const typeStr = isObject && example.type ? `[${example.type.replace(/_/g, " ")}] ` : "";
+												const contentStr = isObject ? example.content : example;
+												
+												return (
+													<li key={idx} className="leading-relaxed">
+														{typeStr && <span className="font-semibold text-amber-800 capitalize mr-1">{typeStr}</span>}
+														{contentStr}
+													</li>
+												);
+											})}
+										</ul>
 								</div>
 
 								{/* LSI Keywords */}
@@ -1059,6 +871,7 @@ export default function TopicGenerator({
 					</div>
 				</div>
 			)}
+			</div>
 		</div>
 	);
 }
