@@ -238,6 +238,49 @@ export default function App() {
     }
   };
 
+  // Triggers DNA regeneration using saved posts from the backend
+  const handleRegenerateDNA = async () => {
+    setView('LOADING');
+    setApiState('pending');
+    setTemporaryProfile(null);
+
+    try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication session has expired. Please log in again.');
+      }
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
+      
+      const response = await fetch(`${apiUrl}/api/analyze/regenerate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ model: selectedModel, provider: dynamicProvider }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to regenerate DNA from saved posts.');
+      }
+
+      const dnaProfileRaw = await response.json();
+      const mappedProfile = mapDnaToProfile(dnaProfileRaw);
+      
+      setTemporaryProfile(mappedProfile);
+      setApiState('success');
+    } catch (err: any) {
+      console.error('Regeneration error:', err);
+      alert(err.message || 'Failed to regenerate writing style profile.');
+      setApiState('error');
+      setView('DASHBOARD');
+    }
+  };
+
   // Called when the loader UI reaches 100% completion
   const handleLoaderComplete = () => {
     if (apiState === 'success' && temporaryProfile) {
@@ -458,6 +501,7 @@ export default function App() {
             onUpdateProfile={handleUpdateProfile}
             onReset={handleResetProfile}
             onProceedToTopics={() => setView('TOPIC_GENERATION')}
+            onRegenerateDNA={handleRegenerateDNA}
           />
         )}
         {view === 'TOPIC_GENERATION' && profile && (

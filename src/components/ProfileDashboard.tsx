@@ -13,7 +13,9 @@ import {
 	Cpu,
 	Target,
 	ChevronDown,
+	Database,
 } from "lucide-react";
+import TrainingData from "./TrainingData";
 
 export interface DnaField<T> {
 	value: T;
@@ -41,6 +43,7 @@ interface ProfileDashboardProps {
 	onUpdateProfile: (updated: WritingProfile) => void;
 	onReset: () => void;
 	onProceedToTopics: () => void;
+	onRegenerateDNA: () => void;
 }
 
 export default function ProfileDashboard({
@@ -48,7 +51,9 @@ export default function ProfileDashboard({
 	onUpdateProfile,
 	onReset,
 	onProceedToTopics,
+	onRegenerateDNA,
 }: ProfileDashboardProps) {
+	const [activeTab, setActiveTab] = useState<"dna" | "training">("dna");
 	const [isEditing, setIsEditing] = useState(false);
 	const [editedProfile, setEditedProfile] = useState<WritingProfile>({
 		...profile,
@@ -108,8 +113,33 @@ export default function ProfileDashboard({
 					<span className="text-[10px] font-mono tracking-widest uppercase bg-indigo-500/5 px-2.5 py-1 rounded-md border border-indigo-500/20 text-indigo-600 font-semibold">
 						Writing DNA Analysis
 					</span>
-					<h1 className="text-2xl font-bold tracking-tight text-slate-800 mt-1">
-						Your Professional Writing DNA
+					<h1 className="text-2xl font-bold tracking-tight text-slate-800 mt-1 flex items-center gap-4">
+						Your Professional Profile
+						
+						<div className="flex bg-slate-100 p-1 rounded-lg">
+							<button
+								onClick={() => setActiveTab('dna')}
+								className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+									activeTab === 'dna' 
+										? 'bg-white text-indigo-600 shadow-sm' 
+										: 'text-slate-500 hover:text-slate-700'
+								}`}
+							>
+								<Cpu className="w-4 h-4" />
+								DNA Overview
+							</button>
+							<button
+								onClick={() => setActiveTab('training')}
+								className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+									activeTab === 'training' 
+										? 'bg-white text-indigo-600 shadow-sm' 
+										: 'text-slate-500 hover:text-slate-700'
+								}`}
+							>
+								<Database className="w-4 h-4" />
+								Training Data
+							</button>
+						</div>
 					</h1>
 				</div>
 
@@ -133,8 +163,12 @@ export default function ProfileDashboard({
 				</div>
 			</div>
 
-			{/* Grid Layout */}
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+			{activeTab === 'training' ? (
+				<TrainingData onRegenerateDNA={onRegenerateDNA} />
+			) : (
+				<>
+					{/* Grid Layout */}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 				{/* Persona insight Card - Span 2 Columns */}
 				<div className="glass-card rounded-2xl p-6 md:p-8 md:col-span-2 relative overflow-hidden flex flex-col justify-between">
 					<div className="radial-glow -top-1/4 -right-1/4 w-72 h-72 opacity-50 pointer-events-none" />
@@ -810,6 +844,8 @@ export default function ProfileDashboard({
 					<Sparkles className="w-5 h-5 ml-2 text-yellow-300 group-hover:animate-bounce" />
 				</button>
 			</div>
+				</>
+			)}
 		</div>
 	);
 }
