@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { Sparkles, LogOut, Cpu, Settings2 } from 'lucide-react';
-import { initSupabase, getSupabase } from './utils/supabaseClient';
-import Auth from './components/Auth';
-import Onboarding from './components/Onboarding';
-import Loader from './components/Loader';
-import ProfileDashboard from './components/ProfileDashboard';
-import type { WritingProfile } from './components/ProfileDashboard';
-import TopicGenerator from './components/TopicGenerator';
+import { useState, useEffect, useRef } from "react";
+import { Sparkles, LogOut, Cpu, Settings2 } from "lucide-react";
+import { initSupabase, getSupabase } from "./utils/supabaseClient";
+import Auth from "./components/Auth";
+import Onboarding from "./components/Onboarding";
+import Loader from "./components/Loader";
+import ProfileDashboard from "./components/ProfileDashboard";
+import type { WritingProfile } from "./components/ProfileDashboard";
+import TopicGenerator from "./components/TopicGenerator";
 
 const LinkedinIcon = ({ className }: { className?: string }) => (
   <svg
@@ -24,19 +24,30 @@ const LinkedinIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-type ScreenView = 'AUTH' | 'ONBOARDING' | 'LOADING' | 'DASHBOARD' | 'TOPIC_GENERATION';
+type ScreenView =
+  | "AUTH"
+  | "ONBOARDING"
+  | "LOADING"
+  | "DASHBOARD"
+  | "TOPIC_GENERATION";
+
+import OutlineLoadingScreen from "./components/OutlineLoadingScreen";
+const TESTING_TOPIC_LOADING_SCREEN = false;
 
 export default function App() {
-  const [view, setView] = useState<ScreenView>('AUTH');
+  const [view, setView] = useState<ScreenView>("AUTH");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<WritingProfile | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-oss:120b');
-  
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-oss:120b");
+
   // API loading synchronizations
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
-  const [apiState, setApiState] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
-  const [temporaryProfile, setTemporaryProfile] = useState<WritingProfile | null>(null);
+  const [apiState, setApiState] = useState<
+    "idle" | "pending" | "success" | "error"
+  >("idle");
+  const [temporaryProfile, setTemporaryProfile] =
+    useState<WritingProfile | null>(null);
 
   // Synchronize view state in a ref to avoid stale closures in event listeners
   const viewRef = useRef<ScreenView>(view);
@@ -50,14 +61,16 @@ export default function App() {
       try {
         await initSupabase();
         const supabase = getSupabase();
-        
+
         // Restore existing user session if available
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session) {
           setUserEmail(session.user.email ?? null);
           await fetchUserProfile(session.user.id);
         } else {
-          setView('AUTH');
+          setView("AUTH");
         }
 
         // Set up auth state change listener
@@ -66,22 +79,25 @@ export default function App() {
             setUserEmail(session.user.email ?? null);
             // Only fetch profile if starting up or explicit sign-in/out occurs.
             // Prevents background token refreshes from resetting page routing.
-            if (viewRef.current === 'AUTH' || viewRef.current === 'LOADING') {
+            if (viewRef.current === "AUTH" || viewRef.current === "LOADING") {
               await fetchUserProfile(session.user.id);
             }
           } else {
             // Only reset state and redirect if the event is explicitly SIGNED_OUT,
             // or if the app is still loading and hasn't restored any session.
-            if (event === 'SIGNED_OUT' || viewRef.current === 'LOADING') {
+            if (event === "SIGNED_OUT" || viewRef.current === "LOADING") {
               setUserEmail(null);
               setProfile(null);
-              setView('AUTH');
+              setView("AUTH");
             }
           }
         });
       } catch (err: any) {
-        console.error('Supabase Setup Failure:', err);
-        setInitError(err.message || 'Failed to establish connection to configuration server.');
+        console.error("Supabase Setup Failure:", err);
+        setInitError(
+          err.message ||
+            "Failed to establish connection to configuration server.",
+        );
       } finally {
         setIsInitializing(false);
       }
@@ -94,92 +110,118 @@ export default function App() {
     try {
       const supabase = getSupabase();
       const { data, error } = await supabase
-        .from('user_dna')
-        .select('dna_profile')
-        .eq('user_id', userId)
+        .from("user_dna")
+        .select("dna_profile")
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (error) {
-        console.error('Failed to query user profile:', error);
+        console.error("Failed to query user profile:", error);
       }
 
       if (data?.dna_profile) {
         const mapped = mapDnaToProfile(data.dna_profile);
         setProfile(mapped);
-        setView('DASHBOARD');
+        setView("DASHBOARD");
       } else {
-        setView('ONBOARDING');
+        setView("ONBOARDING");
       }
     } catch (err) {
-      console.error('Profile query failed:', err);
-      setView('ONBOARDING');
+      console.error("Profile query failed:", err);
+      setView("ONBOARDING");
     }
   };
 
   // Maps backend raw schema to frontend's high-fidelity WritingProfile interface
   const mapDnaToProfile = (res: any): WritingProfile => {
-    if (res && res.tone && typeof res.tone === 'object' && 'value' in res.tone && res.personaName) {
+    if (
+      res &&
+      res.tone &&
+      typeof res.tone === "object" &&
+      "value" in res.tone &&
+      res.personaName
+    ) {
       return res as WritingProfile; // Already mapped
     }
 
     const tone = {
-      value: res.tone?.value || 'conversational',
-      reasoning: res.tone?.reasoning || 'The tone is conversational, friendly, and engaging.',
-      confidence: res.tone?.confidence ?? 0.8
+      value: res.tone?.value || "conversational",
+      reasoning:
+        res.tone?.reasoning ||
+        "The tone is conversational, friendly, and engaging.",
+      confidence: res.tone?.confidence ?? 0.8,
     };
 
     const topic = {
-      value: Array.isArray(res.topic?.value) ? res.topic.value : ['technology', 'programming', 'web development', 'AI'],
-      reasoning: res.topic?.reasoning || 'Main topics covered are technology, programming, and AI.',
-      confidence: res.topic?.confidence ?? 0.9
+      value: Array.isArray(res.topic?.value)
+        ? res.topic.value
+        : ["technology", "programming", "web development", "AI"],
+      reasoning:
+        res.topic?.reasoning ||
+        "Main topics covered are technology, programming, and AI.",
+      confidence: res.topic?.confidence ?? 0.9,
     };
 
     const avg_words = {
-      value: typeof res.avg_words?.value === 'number' ? res.avg_words.value : Number(res.avg_words?.value) || 250,
-      reasoning: res.avg_words?.reasoning || 'Average word count is around 250.',
-      confidence: res.avg_words?.confidence ?? 0.9
+      value:
+        typeof res.avg_words?.value === "number"
+          ? res.avg_words.value
+          : Number(res.avg_words?.value) || 250,
+      reasoning:
+        res.avg_words?.reasoning || "Average word count is around 250.",
+      confidence: res.avg_words?.confidence ?? 0.9,
     };
 
     const hoop_type = {
-      value: res.hoop_type?.value || 'exciting introduction',
-      reasoning: res.hoop_type?.reasoning || 'Uses direct hook points to optimize impressions.',
-      confidence: res.hoop_type?.confidence ?? 0.7
+      value: res.hoop_type?.value || "exciting introduction",
+      reasoning:
+        res.hoop_type?.reasoning ||
+        "Uses direct hook points to optimize impressions.",
+      confidence: res.hoop_type?.confidence ?? 0.7,
     };
 
     const writing_type = {
-      value: res.writing_type?.value || 'informative',
-      reasoning: res.writing_type?.reasoning || 'The overall writing paradigm is informative and educational.',
-      confidence: res.writing_type?.confidence ?? 0.8
+      value: res.writing_type?.value || "informative",
+      reasoning:
+        res.writing_type?.reasoning ||
+        "The overall writing paradigm is informative and educational.",
+      confidence: res.writing_type?.confidence ?? 0.8,
     };
 
     const paragraph_size = {
-      value: res.paragraph_size?.value || 'short',
-      reasoning: res.paragraph_size?.reasoning || 'Uses short, clean paragraphs for readability.',
-      confidence: res.paragraph_size?.confidence ?? 0.8
+      value: res.paragraph_size?.value || "short",
+      reasoning:
+        res.paragraph_size?.reasoning ||
+        "Uses short, clean paragraphs for readability.",
+      confidence: res.paragraph_size?.confidence ?? 0.8,
     };
 
     const emoji_frequency = {
-      value: res.emoji_frequency?.value || 'high',
-      reasoning: res.emoji_frequency?.reasoning || 'Emojis are used to enhance readability and personality.',
-      confidence: res.emoji_frequency?.confidence ?? 0.8
+      value: res.emoji_frequency?.value || "high",
+      reasoning:
+        res.emoji_frequency?.reasoning ||
+        "Emojis are used to enhance readability and personality.",
+      confidence: res.emoji_frequency?.confidence ?? 0.8,
     };
 
     const target_audience = {
-      value: res.target_audience?.value || 'Professionals in your industry',
-      reasoning: res.target_audience?.reasoning || 'Inferred target audience based on the complexity and subject of your posts.',
-      confidence: res.target_audience?.confidence ?? 0.8
+      value: res.target_audience?.value || "Professionals in your industry",
+      reasoning:
+        res.target_audience?.reasoning ||
+        "Inferred target audience based on the complexity and subject of your posts.",
+      confidence: res.target_audience?.confidence ?? 0.8,
     };
 
     // Compute fresh persona name based on fields
-    const wType = (writing_type.value || '').toLowerCase();
-    const toneVal = (tone.value || '').toLowerCase();
-    let personaName = 'The Technical Storyteller';
-    if (wType.includes('inform') || wType.includes('educat')) {
-      personaName = 'The Authority Educator';
-    } else if (toneVal.includes('bold') || toneVal.includes('assert')) {
-      personaName = 'The Bold Thought Leader';
-    } else if (toneVal.includes('convers') || toneVal.includes('friend')) {
-      personaName = 'The Conversational Networker';
+    const wType = (writing_type.value || "").toLowerCase();
+    const toneVal = (tone.value || "").toLowerCase();
+    let personaName = "The Technical Storyteller";
+    if (wType.includes("inform") || wType.includes("educat")) {
+      personaName = "The Authority Educator";
+    } else if (toneVal.includes("bold") || toneVal.includes("assert")) {
+      personaName = "The Bold Thought Leader";
+    } else if (toneVal.includes("convers") || toneVal.includes("friend")) {
+      personaName = "The Conversational Networker";
     }
 
     return {
@@ -192,114 +234,137 @@ export default function App() {
       emoji_frequency,
       target_audience,
       personaName,
-      personaDescription: writing_type.reasoning
+      personaDescription: writing_type.reasoning,
     };
   };
 
   // Submits the onboarding posts list to backend /api/analyze endpoint
   const handleOnboardingSubmit = async (posts: string[]) => {
-    setView('LOADING');
-    setApiState('pending');
+    setView("LOADING");
+    setApiState("pending");
     setTemporaryProfile(null);
 
     try {
       const supabase = getSupabase();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error('Authentication session has expired. Please log in again.');
+        throw new Error(
+          "Authentication session has expired. Please log in again.",
+        );
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const dynamicProvider = selectedModel.includes("gpt-oss")
+        ? "ollama"
+        : "groq";
       const response = await fetch(`${apiUrl}/api/analyze`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ posts, model: selectedModel, provider: dynamicProvider }),
+        body: JSON.stringify({
+          posts,
+          model: selectedModel,
+          provider: dynamicProvider,
+        }),
       });
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || 'Backend analysis engine encountered an error.');
+        throw new Error(
+          errData.error || "Backend analysis engine encountered an error.",
+        );
       }
 
       const dnaProfileRaw = await response.json();
       const mappedProfile = mapDnaToProfile(dnaProfileRaw);
-      
+
       setTemporaryProfile(mappedProfile);
-      setApiState('success');
+      setApiState("success");
     } catch (err: any) {
-      console.error('Analysis error:', err);
-      alert(err.message || 'Failed to extract writing style profile.');
-      setApiState('error');
-      setView('ONBOARDING');
+      console.error("Analysis error:", err);
+      alert(err.message || "Failed to extract writing style profile.");
+      setApiState("error");
+      setView("ONBOARDING");
     }
   };
 
   // Triggers DNA regeneration using saved posts from the backend
   const handleRegenerateDNA = async () => {
-    setView('LOADING');
-    setApiState('pending');
+    setView("LOADING");
+    setApiState("pending");
     setTemporaryProfile(null);
 
     try {
       const supabase = getSupabase();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error('Authentication session has expired. Please log in again.');
+        throw new Error(
+          "Authentication session has expired. Please log in again.",
+        );
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const dynamicProvider = selectedModel.includes('gpt-oss') ? 'ollama' : 'groq';
-      
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+      const dynamicProvider = selectedModel.includes("gpt-oss")
+        ? "ollama"
+        : "groq";
+
       const response = await fetch(`${apiUrl}/api/analyze/regenerate`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ model: selectedModel, provider: dynamicProvider }),
+        body: JSON.stringify({
+          model: selectedModel,
+          provider: dynamicProvider,
+        }),
       });
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || 'Failed to regenerate DNA from saved posts.');
+        throw new Error(
+          errData.error || "Failed to regenerate DNA from saved posts.",
+        );
       }
 
       const dnaProfileRaw = await response.json();
       const mappedProfile = mapDnaToProfile(dnaProfileRaw);
-      
+
       setTemporaryProfile(mappedProfile);
-      setApiState('success');
+      setApiState("success");
     } catch (err: any) {
-      console.error('Regeneration error:', err);
-      alert(err.message || 'Failed to regenerate writing style profile.');
-      setApiState('error');
-      setView('DASHBOARD');
+      console.error("Regeneration error:", err);
+      alert(err.message || "Failed to regenerate writing style profile.");
+      setApiState("error");
+      setView("DASHBOARD");
     }
   };
 
   // Called when the loader UI reaches 100% completion
   const handleLoaderComplete = () => {
-    if (apiState === 'success' && temporaryProfile) {
+    if (apiState === "success" && temporaryProfile) {
       setProfile(temporaryProfile);
-      setView('DASHBOARD');
-      setApiState('idle');
+      setView("DASHBOARD");
+      setApiState("idle");
       setTemporaryProfile(null);
-    } else if (apiState === 'error') {
-      setView('ONBOARDING');
-      setApiState('idle');
+    } else if (apiState === "error") {
+      setView("ONBOARDING");
+      setApiState("idle");
     } else {
       // API call still in progress, loader will wait at 99%
-      console.log('Loader completed but API is still pending. Holding view.');
+      console.log("Loader completed but API is still pending. Holding view.");
     }
   };
 
   // Watch API success to auto-finish loader if it was waiting at 99%
   useEffect(() => {
-    if (view === 'LOADING' && apiState === 'success' && temporaryProfile) {
+    if (view === "LOADING" && apiState === "success" && temporaryProfile) {
       // Transition if the loader was already complete and waiting
       // We check if progress is done. App will transition via callback or directly.
     }
@@ -308,52 +373,60 @@ export default function App() {
   const handleUpdateProfile = async (updated: WritingProfile) => {
     try {
       const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
       setProfile(updated);
-      
+
       // Strip computed properties before database sync
       const { personaName, personaDescription, ...dnaProfileData } = updated;
-      
+
       // Update database profile
       const { error } = await supabase
-        .from('user_dna')
+        .from("user_dna")
         .update({
           dna_profile: dnaProfileData,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id);
+        .eq("user_id", user.id);
 
       if (error) {
-        console.error('Failed to sync profile update with database:', error);
+        console.error("Failed to sync profile update with database:", error);
       }
     } catch (err) {
-      console.error('Profile update failed:', err);
+      console.error("Profile update failed:", err);
     }
   };
 
   const handleResetProfile = async () => {
     try {
       const supabase = getSupabase();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      if (confirm('Are you sure you want to recalibrate? This will clear your current profile and let you upload new posts.')) {
+      if (
+        confirm(
+          "Are you sure you want to recalibrate? This will clear your current profile and let you upload new posts.",
+        )
+      ) {
         setProfile(null);
-        setView('ONBOARDING');
+        setView("ONBOARDING");
 
         const { error } = await supabase
-          .from('user_dna')
+          .from("user_dna")
           .delete()
-          .eq('user_id', user.id);
+          .eq("user_id", user.id);
 
         if (error) {
-          console.error('Failed to clear DNA profile from database:', error);
+          console.error("Failed to clear DNA profile from database:", error);
         }
       }
     } catch (err) {
-      console.error('Profile reset failed:', err);
+      console.error("Profile reset failed:", err);
     }
   };
 
@@ -362,11 +435,11 @@ export default function App() {
       const supabase = getSupabase();
       await supabase.auth.signOut();
     } catch (err) {
-      console.error('Logout failed:', err);
+      console.error("Logout failed:", err);
     } finally {
       setUserEmail(null);
       setProfile(null);
-      setView('AUTH');
+      setView("AUTH");
     }
   };
 
@@ -380,25 +453,40 @@ export default function App() {
           <div className="absolute inset-0 rounded-full border-2 border-indigo-500/10 animate-pulse" />
 
           {/* Orbit Ring 1 - Cyan */}
-          <div className="absolute w-26 h-26 rounded-full border-t border-b border-cyan-500/20 animate-spin" style={{ animationDuration: '8s' }} />
+          <div
+            className="absolute w-26 h-26 rounded-full border-t border-b border-cyan-500/20 animate-spin"
+            style={{ animationDuration: "8s" }}
+          />
 
           {/* Orbit Ring 2 - Violet (Spinning Counter-Clockwise) */}
-          <div className="absolute w-20 h-20 rounded-full border-l border-r border-purple-500/20 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '6s' }} />
+          <div
+            className="absolute w-20 h-20 rounded-full border-l border-r border-purple-500/20 animate-spin"
+            style={{ animationDirection: "reverse", animationDuration: "6s" }}
+          />
 
           {/* Orbit Ring 3 - Indigo (Fast) */}
-          <div className="absolute w-16 h-16 rounded-full border-t-2 border-indigo-500/40 animate-spin" style={{ animationDuration: '2.5s' }} />
+          <div
+            className="absolute w-16 h-16 rounded-full border-t-2 border-indigo-500/40 animate-spin"
+            style={{ animationDuration: "2.5s" }}
+          />
 
           {/* Inner Hub Glass Sphere */}
           <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-md relative">
             <Cpu className="w-4 h-4 text-indigo-600 animate-pulse" />
             <div className="absolute -top-0.5 -right-0.5">
-              <Sparkles className="w-3 h-3 text-cyan-600 animate-bounce" style={{ animationDuration: '1.5s' }} />
+              <Sparkles
+                className="w-3 h-3 text-cyan-600 animate-bounce"
+                style={{ animationDuration: "1.5s" }}
+              />
             </div>
           </div>
         </div>
 
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-mono font-semibold text-indigo-600 uppercase tracking-wider mb-2.5 animate-pulse">
-          <Sparkles className="w-3 h-3 text-cyan-500 animate-spin" style={{ animationDuration: '6s' }} />
+          <Sparkles
+            className="w-3 h-3 text-cyan-500 animate-spin"
+            style={{ animationDuration: "6s" }}
+          />
           <span>Synchronizing Session</span>
         </div>
 
@@ -406,7 +494,8 @@ export default function App() {
           Establishing Secure Handshake with Writing DNA Engine...
         </p>
         <p className="text-[11px] text-slate-500 max-w-xs mt-1 mx-auto">
-          Authenticating SUPABASE gateway credentials and restoring persona index mappings.
+          Authenticating SUPABASE gateway credentials and restoring persona
+          index mappings.
         </p>
       </div>
     );
@@ -419,7 +508,9 @@ export default function App() {
         <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 mb-4 animate-float">
           <Sparkles className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-slate-800 mb-2">Connection Failure</h2>
+        <h2 className="text-xl font-bold text-slate-800 mb-2">
+          Connection Failure
+        </h2>
         <p className="text-sm text-slate-600 max-w-sm mb-6">{initError}</p>
         <button
           onClick={() => window.location.reload()}
@@ -431,97 +522,83 @@ export default function App() {
     );
   }
 
+  if (TESTING_TOPIC_LOADING_SCREEN) {
+    return <OutlineLoadingScreen />;
+  }
+
   return (
     <div className="min-h-screen bg-warm-bg relative flex flex-col justify-between">
       {/* Dynamic Background Blurs */}
       <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-indigo-900/2 to-transparent pointer-events-none z-0" />
-
-      {/* Main Navbar */}
-      <header className="relative z-20 border-b border-warm-border bg-warm-card/85 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 text-indigo-500">
-              <LinkedinIcon className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-sm tracking-tight text-brand-espresso flex items-center gap-1.5">
-              LinkedIn DNA Generator
-              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/25 text-indigo-600 font-semibold">
-                v1.0-beta
+      {/* Top Navigation Bar */}
+      {view !== "AUTH" && view !== "LOADING" && (
+        <header className="relative z-20 bg-white border-b border-slate-200 shadow-sm">
+          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+            {/* Left: Brand */}
+            <div className="flex items-center">
+              <span className="font-extrabold text-[22px] tracking-tight text-[#5B5BFF]">
+                AIPulse
               </span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 bg-indigo-50/50 border border-indigo-100 px-3 py-1.5 rounded-lg shadow-sm">
-              <Settings2 className="w-4 h-4 text-indigo-500" />
-              <select 
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="bg-transparent border-none text-xs font-medium text-brand-espresso outline-none cursor-pointer focus:ring-0"
-              >
-                <option value="gpt-oss:120b">gpt-oss:120b (Default)</option>
-                <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-                <option value="llama3-8b-8192">llama3-8b-8192</option>
-                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                <option value="gemma2-9b-it">gemma2-9b-it</option>
-              </select>
             </div>
 
-          {userEmail && (
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-[10px] text-slate-500 font-mono">LOGGED IN AS</span>
-                <span className="text-xs font-semibold text-brand-espresso">{userEmail}</span>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border border-warm-border flex items-center justify-center font-bold text-xs text-white uppercase shadow-md shadow-indigo-600/10">
-                {userEmail.charAt(0)}
-              </div>
+            {/* Right: Controls */}
+            <div className="flex items-center gap-6">
               <button
-                onClick={handleLogout}
-                className="inline-flex items-center justify-center p-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 transition-all text-xs cursor-pointer shadow-sm hover:shadow"
-                title="Log Out"
+                className="text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                title="Settings"
               >
-                <LogOut className="w-3.5 h-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Log Out</span>
+                <Settings2 className="w-5 h-5" />
               </button>
-            </div>
-          )}
-          </div>
-        </div>
-      </header>
 
+              {userEmail && (
+                <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
+                  <div className="w-9 h-9 rounded-full bg-slate-800 border-2 border-white shadow-sm flex items-center justify-center font-bold text-sm text-white uppercase relative">
+                    {userEmail.charAt(0)}
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#5B5BFF] border-2 border-white rounded-full"></div>
+                  </div>
+                  <div className="hidden sm:flex flex-col items-start">
+                    <span className="text-[13px] font-bold text-slate-800">
+                      {userEmail.split("@")[0]}
+                    </span>
+                    <button
+                      onClick={handleLogout}
+                      className="text-[9px] font-bold text-slate-500 tracking-wider uppercase hover:text-rose-500 transition-colors cursor-pointer"
+                    >
+                      LOGOUT
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+      )}
       {/* View Orchestrator */}
-      <main className="flex-grow flex flex-col justify-center py-6 relative z-10">
-        {view === 'AUTH' && <Auth />}
-        {view === 'ONBOARDING' && <Onboarding onSubmitPosts={handleOnboardingSubmit} />}
-        {view === 'LOADING' && <Loader onComplete={handleLoaderComplete} />}
-        {view === 'DASHBOARD' && profile && (
+      <main className="flex-grow flex flex-col justify-center relative z-10">
+        {view === "AUTH" && <Auth />}
+        {view === "ONBOARDING" && (
+          <Onboarding onSubmitPosts={handleOnboardingSubmit} />
+        )}
+        {view === "LOADING" && <Loader onComplete={handleLoaderComplete} />}
+        {view === "DASHBOARD" && profile && (
           <ProfileDashboard
             profile={profile}
             onUpdateProfile={handleUpdateProfile}
             onReset={handleResetProfile}
-            onProceedToTopics={() => setView('TOPIC_GENERATION')}
+            onProceedToTopics={() => setView("TOPIC_GENERATION")}
             onRegenerateDNA={handleRegenerateDNA}
           />
         )}
-        {view === 'TOPIC_GENERATION' && profile && (
-          <TopicGenerator 
-            profile={profile} 
-            onBack={() => setView('DASHBOARD')}
+        {view === "TOPIC_GENERATION" && profile && (
+          <TopicGenerator
+            profile={profile}
+            onBack={() => setView("DASHBOARD")}
             selectedModel={selectedModel}
           />
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-20 border-t border-warm-border py-4 text-center text-[10px] text-slate-500 font-mono">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>© 2026 AI LinkedIn Post Generator. All rights reserved.</span>
-          <span className="flex items-center gap-1.5">
-            Powered by Gemini <Sparkles className="w-3 h-3 text-indigo-450" />
-          </span>
-        </div>
-      </footer>
+      {/* Footer removed as per design changes */}
     </div>
   );
 }

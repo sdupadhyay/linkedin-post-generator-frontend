@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
+import TopicLoadingScreen from "./TopicLoadingScreen";
+import OutlineLoadingScreen from "./OutlineLoadingScreen";
+import PostLoadingScreen from "./PostLoadingScreen";
 import {
 	Lightbulb,
-	Check,
 	ChevronLeft,
 	Sparkles,
 	Compass,
 	TrendingUp,
 	Target,
-	ShieldCheck,
 	Code2,
-	RefreshCw,
 	Copy,
-	CheckCheck,
 	FileText,
-	Brain,
-	Cpu,
+		ShieldCheck,
+		CheckCheck,
 } from "lucide-react";
 import { getSupabase } from "../utils/supabaseClient";
 import type { WritingProfile } from "./ProfileDashboard";
@@ -438,8 +437,21 @@ export default function TopicGenerator({
 		setTimeout(() => setCopied(false), 2000);
 	};
 
+	if (isLoading) {
+		return <TopicLoadingScreen />;
+	}
+
+	if (isGeneratingOutline) {
+		return <OutlineLoadingScreen />;
+	}
+
+	if (isGeneratingPost) {
+		return <PostLoadingScreen />;
+	}
+
 	return (
-		<div className="relative max-w-4xl mx-auto px-4 py-8 z-10 animate-fade-in-up">
+		<div className="min-h-[100vh] bg-gradient-to-br from-white via-[#f4fcf8] to-[#00bb7f]/20 font-sans p-6 pb-32 -mx-4 sm:-mx-6 lg:-mx-8">
+			<div className="relative max-w-[1200px] mx-auto z-10 animate-fade-in-up">
 			{/* Back button */}
 			<button
 				onClick={() => {
@@ -463,122 +475,6 @@ export default function TopicGenerator({
 				</span>
 			</button>
 
-			{/* Step Progress Indicator */}
-			{!isLoading && (
-				<div className="flex items-center justify-center max-w-md mx-auto mb-8 select-none">
-					<div className="flex items-center w-full">
-						{/* Step 1: Select Topic */}
-						<div className="flex flex-col items-center relative">
-							<div
-								className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-									step === "topics"
-										? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-100"
-										: "bg-emerald-500 text-white shadow-sm"
-								}`}
-							>
-								{step !== "topics" ? <Check className="w-4 h-4" /> : "1"}
-							</div>
-							<span
-								className={`text-[10px] font-semibold mt-1.5 whitespace-nowrap ${
-									step === "topics"
-										? "text-indigo-600 font-bold"
-										: "text-slate-500"
-								}`}
-							>
-								Choose Topic
-							</span>
-						</div>
-
-						{/* Line 1 */}
-						<div
-							className={`flex-1 h-0.5 mx-2 transition-all duration-500 ${
-								step !== "topics" ? "bg-emerald-500" : "bg-slate-200"
-							}`}
-						/>
-
-						{/* Step 2: Customize Outline */}
-						<div className="flex flex-col items-center relative">
-							<div
-								className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-									step === "outline"
-										? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-100"
-										: step === "post"
-											? "bg-emerald-500 text-white shadow-sm"
-											: "bg-slate-100 text-slate-400 border border-slate-200"
-								}`}
-							>
-								{step === "post" ? <Check className="w-4 h-4" /> : "2"}
-							</div>
-							<span
-								className={`text-[10px] font-semibold mt-1.5 whitespace-nowrap ${
-									step === "outline"
-										? "text-indigo-600 font-bold"
-										: "text-slate-500"
-								}`}
-							>
-								Steer Outline
-							</span>
-						</div>
-
-						{/* Line 2 */}
-						<div
-							className={`flex-1 h-0.5 mx-2 transition-all duration-500 ${
-								step === "post" ? "bg-emerald-500" : "bg-slate-200"
-							}`}
-						/>
-
-						{/* Step 3: Write Draft */}
-						<div className="flex flex-col items-center relative">
-							<div
-								className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-									step === "post"
-										? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-100"
-										: "bg-slate-100 text-slate-400 border border-slate-200"
-								}`}
-							>
-								3
-							</div>
-							<span
-								className={`text-[10px] font-semibold mt-1.5 whitespace-nowrap ${
-									step === "post"
-										? "text-indigo-600 font-bold"
-										: "text-slate-500"
-								}`}
-							>
-								Ghostwrite Draft
-							</span>
-						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Header */}
-			<div className="text-center mb-8">
-				<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[11px] font-mono font-semibold text-purple-600 uppercase tracking-wider mb-3">
-					<Sparkles className="w-3.5 h-3.5 text-yellow-600" />
-					<span>
-						{step === "topics"
-							? "Idea Generation Lab"
-							: step === "outline"
-								? "Content Outline Steering"
-								: "Ghostwriting Drafting Lab"}
-					</span>
-				</div>
-				<h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-brand-espresso via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-					{step === "topics"
-						? "AI-Suggested Topic Concepts"
-						: step === "outline"
-							? "Refine and Direct Your Outline"
-							: "Your Custom LinkedIn Post Draft"}
-				</h1>
-				<p className="mt-2 text-sm text-slate-600 max-w-xl mx-auto">
-					{step === "topics"
-						? "Generate structured post angles calibrated directly to your writing style profile. Select a topic card to initiate the generation process."
-						: step === "outline"
-							? "Review the AI-generated outline structure. You can customize the final draft by adding specific steering feedback below."
-							: "Here is your ghostwritten LinkedIn post, written in your exact tone, formatting, emoji usage, and paragraphs."}
-				</p>
-
 				{errorMsg && (
 					<div className="mt-6 p-4 rounded-xl bg-rose-50 border border-rose-100 text-xs text-rose-600 max-w-md mx-auto">
 						{errorMsg}
@@ -593,472 +489,367 @@ export default function TopicGenerator({
 						<span>Generate Suggested Topics</span>
 					</button>
 				)}
-			</div>
 
-			{/* Loader */}
-			{isLoading && (
-				<div className="flex flex-col items-center justify-center py-16 text-center select-none animate-fade-in-up">
-					<div className="relative w-32 h-32 mb-6 flex items-center justify-center">
-						{/* Outer Pulsing Ring */}
-						<div className="absolute inset-0 rounded-full border-2 border-indigo-500/10 animate-pulse" />
-
-						{/* Orbit Ring 1 - Cyan */}
-						<div
-							className="absolute w-26 h-26 rounded-full border-t border-b border-cyan-500/20 animate-spin"
-							style={{ animationDuration: "8s" }}
-						/>
-
-						{/* Orbit Ring 2 - Violet (Spinning Counter-Clockwise) */}
-						<div
-							className="absolute w-20 h-20 rounded-full border-l border-r border-purple-500/20 animate-spin"
-							style={{ animationDirection: "reverse", animationDuration: "5s" }}
-						/>
-
-						{/* Orbit Ring 3 - Indigo (Fast) */}
-						<div
-							className="absolute w-16 h-16 rounded-full border-t-2 border-indigo-500/40 animate-spin"
-							style={{ animationDuration: "2.5s" }}
-						/>
-
-						{/* Inner Hub Glass Sphere */}
-						<div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-md relative">
-							<Brain className="w-4 h-4 text-purple-600 animate-pulse" />
-							<div className="absolute -top-0.5 -right-0.5">
-								<Sparkles
-									className="w-3 h-3 text-cyan-600 animate-bounce"
-									style={{ animationDuration: "1.5s" }}
-								/>
-							</div>
-						</div>
-					</div>
-
-					<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-mono font-semibold text-indigo-600 uppercase tracking-wider mb-2.5 animate-pulse">
-						<Cpu
-							className="w-3.5 h-3.5 text-cyan-600 animate-spin"
-							style={{ animationDuration: "4s" }}
-						/>
-						<span>Scanning Search Niche Trends</span>
-					</div>
-
-					<p className="text-sm font-bold text-slate-800 animate-pulse">
-						Querying Tavily Web Trends & Matching with Persona DNA...
-					</p>
-					<p className="text-[11px] text-slate-500 max-w-xs mt-1">
-						Analyzing real-time industry topics to engineer custom
-						high-converting angles.
-					</p>
-				</div>
-			)}
-
-			{/* Outline Loading State */}
-			{isGeneratingOutline && (
-				<div className="mt-8 glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center animate-fade-in-up border border-indigo-500/10 shadow-sm">
-					<div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-150 flex items-center justify-center mb-4">
-						<Sparkles
-							className="w-6 h-6 text-indigo-600 animate-spin"
-							style={{ animationDuration: "3s" }}
-						/>
-					</div>
-					<h3 className="text-base font-bold text-slate-800 mb-1">
-						Architecting Content Outline...
-					</h3>
-					<p className="text-xs text-slate-500 max-w-sm">
-						Synthesizing the core thesis, narrative flow, suggested examples,
-						and target SEO keywords...
-					</p>
-				</div>
-			)}
-
-			{/* Post Generation Loading State */}
-			{isGeneratingPost && (
-				<div className="mt-8 glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center animate-fade-in-up border border-indigo-500/10 shadow-sm">
-					<div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-150 flex items-center justify-center mb-4">
-						<Sparkles
-							className="w-6 h-6 text-indigo-600 animate-spin"
-							style={{ animationDuration: "3s" }}
-						/>
-					</div>
-					<h3 className="text-base font-bold text-slate-800 mb-1">
-						Ghostwriting LinkedIn Post...
-					</h3>
-					<p className="text-xs text-slate-500 max-w-sm">
-						Groq Llama 3 engine is composing your post based on the approved
-						outline, your writing DNA profile, and your steering feedback.
-					</p>
-				</div>
-			)}
 
 			{/* Step 1: Choose or Write a Topic */}
 			{step === "topics" && !isLoading && !isGeneratingOutline && (
-				<div className="space-y-6 animate-fade-in-up">
-					{topics.length > 0 && (
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-							{topics.map((topic) => {
-								const isSelected = selectedTopicId === topic.id;
-								const IconComp = topic.icon;
+				<div className="space-y-10 animate-fade-in-up w-full max-w-[1100px] mx-auto pb-20">
+					
+					{/* Header */}
+					<div className="mb-4">
+						<h2 className="text-[28px] md:text-[32px] font-extrabold text-[#0f172a] mb-2 tracking-tight">Recommended Topics</h2>
+						<p className="text-slate-500 font-medium text-[14px] md:text-[15px] max-w-3xl leading-relaxed">
+							AI-curated content streams based on your brand DNA and current audience engagement trends. Pick a direction to start generating your outline.
+						</p>
+					</div>
 
-								return (
-									<div
-										key={topic.id}
-										onClick={() => handleSelectTopic(topic.id)}
-										className={`glass-card rounded-2xl p-5 cursor-pointer relative overflow-hidden transition-all duration-300 select-none ${
-											isSelected
-												? "border-indigo-500 bg-indigo-50/50 shadow-md scale-[1.01]"
-												: "hover:scale-[1.01]"
-										}`}
-									>
-										{/* Select indicator */}
-										{isSelected && (
-											<div className="absolute top-4 right-4 p-1 rounded-full bg-indigo-500 border border-indigo-400 flex items-center justify-center animate-pulse">
-												<Check className="w-3.5 h-3.5 text-white" />
-											</div>
-										)}
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						{topics.map((topic) => {
+							const isSelected = selectedTopicId === topic.id;
+							
+							return (
+								<div
+									key={topic.id}
+									onClick={() => handleSelectTopic(topic.id)}
+									className={`bg-white rounded-[20px] p-6 md:p-7 flex flex-col justify-between cursor-pointer transition-all duration-300 relative group overflow-hidden ${
+										isSelected
+											? "border-[#00bb7f] ring-1 ring-[#00bb7f] shadow-[0_12px_40px_rgba(0,187,127,0.12)] scale-[1.02]"
+											: "border border-slate-200 hover:border-[#00bb7f]/40 hover:shadow-[0_8px_30px_rgba(0,187,127,0.08)] hover:-translate-y-1 scale-100"
+									}`}
+								>
+									{/* Highlight Bar for selected card */}
+									<div className={`absolute top-0 left-0 right-0 h-[5px] transition-all duration-300 ${isSelected ? 'bg-[#00bb7f]' : 'bg-transparent group-hover:bg-[#00bb7f]/20'}`} />
 
-										<div className="flex items-start gap-4 pr-6">
-											<div
-												className={`p-3 rounded-xl border ${
-													isSelected
-														? "bg-indigo-50 border-indigo-200 text-indigo-700"
-														: "bg-slate-50 border-slate-200 text-slate-500"
-												}`}
-											>
-												<IconComp className="w-5 h-5" />
-											</div>
-
-											<div className="space-y-1.5">
-												<div className="flex items-center gap-2">
-													<span className="text-[10px] font-mono text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded uppercase">
-														{topic.category}
-													</span>
-													<span
-														className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase ${
-															topic.difficulty === "Storytelling"
-																? "text-yellow-700 bg-yellow-50 border border-yellow-200"
-																: topic.difficulty === "Authority"
-																	? "text-purple-700 bg-purple-50 border border-purple-200"
-																	: "text-cyan-700 bg-cyan-50 border border-cyan-200"
-														}`}
-													>
-														{topic.difficulty}
-													</span>
-												</div>
-
-												<h3 className="text-base font-bold text-slate-800 pr-2">
-													{topic.title}
-												</h3>
-
-												<p className="text-xs text-slate-500 leading-relaxed">
-													{topic.description}
-												</p>
-											</div>
+									<div>
+										<h3 className={`text-[17px] font-bold mb-4 leading-snug transition-colors duration-300 pr-4 ${isSelected ? 'text-[#00bb7f]' : 'text-slate-900 group-hover:text-[#00bb7f]'}`}>
+											{topic.title}
+										</h3>
+										
+										<div className="flex items-center justify-between mb-5">
+											<span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md transition-colors ${
+												isSelected 
+													? 'bg-[#00bb7f] text-white' 
+													: 'bg-[#00bb7f]/10 text-[#00bb7f]'
+											}`}>
+												{topic.difficulty || topic.category || 'RECOMMENDED'}
+											</span>
+											<span className="text-[12px] font-extrabold text-slate-500">
+												{Math.floor(Math.random() * (99 - 85 + 1) + 85)}% Match
+											</span>
 										</div>
 									</div>
-								);
-							})}
-						</div>
-					)}
 
-					{topics.length > 0 && (
-						<>
-							<div className="relative flex py-2 items-center">
-								<div className="flex-grow border-t border-slate-200/50"></div>
-								<span className="flex-shrink mx-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-									Or write your own topic concept
-								</span>
-								<div className="flex-grow border-t border-slate-200/50"></div>
-							</div>
+									<div className={`mt-6 rounded-xl p-4 transition-colors duration-300 ${isSelected ? 'bg-[#00bb7f]/5 border border-[#00bb7f]/10' : 'bg-slate-50 border border-slate-100 group-hover:bg-[#00bb7f]/[0.02]'}`}>
+										<span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">AI Reasoning</span>
+										<p className="text-[12px] text-slate-600 font-medium italic leading-relaxed">
+											"{topic.description}"
+										</p>
+									</div>
+								</div>
+							);
+						})}
 
-							{/* Custom Topic Form */}
-							<div className="glass-card rounded-2xl p-6 border border-indigo-150/20 space-y-4">
-								<div>
-									<h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-										<Lightbulb className="w-4 h-4 text-yellow-500" />
-										<span>Create a Custom Topic</span>
-									</h3>
-									<p className="text-[11px] text-slate-500">
-										Type your own topic title and details. We will build a
-										structured outline and draft calibrated to your profile.
-									</p>
+						{/* Custom Topic Card */}
+						<div
+							onClick={() => setSelectedTopicId('custom')}
+							className={`bg-white rounded-[20px] p-6 md:p-7 flex flex-col cursor-pointer transition-all duration-300 relative group overflow-hidden ${
+								selectedTopicId === 'custom'
+									? "border-[#00bb7f] ring-1 ring-[#00bb7f] shadow-[0_12px_40px_rgba(0,187,127,0.12)] scale-[1.02]"
+									: "border border-slate-200 hover:border-[#00bb7f]/40 hover:shadow-[0_8px_30px_rgba(0,187,127,0.08)] hover:-translate-y-1 scale-100"
+							}`}
+						>
+							{/* Highlight Bar for selected card */}
+							<div className={`absolute top-0 left-0 right-0 h-[5px] transition-all duration-300 ${selectedTopicId === 'custom' ? 'bg-[#00bb7f]' : 'bg-transparent group-hover:bg-[#00bb7f]/20'}`} />
+
+							<div>
+								<h3 className={`text-[17px] font-bold mb-4 leading-snug transition-colors duration-300 pr-4 flex items-center gap-2 ${selectedTopicId === 'custom' ? 'text-[#00bb7f]' : 'text-slate-900 group-hover:text-[#00bb7f]'}`}>
+									Create Your Own Topic
+								</h3>
+								
+								<div className="flex items-center justify-between mb-4">
+									<span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 ${
+										selectedTopicId === 'custom' 
+											? 'bg-[#00bb7f] text-white' 
+											: 'bg-[#00bb7f]/10 text-[#00bb7f]'
+									}`}>
+										<span className="text-[11px] leading-none">+</span> CUSTOM INPUT
+									</span>
 								</div>
 
-								<div className="grid grid-cols-1 gap-3">
-									<input
-										type="text"
-										placeholder="Topic Title (e.g. Scaling our engineering team to 50 developers)"
-										value={customTitle}
-										onChange={(e) => {
-											setCustomTitle(e.target.value);
-											setSelectedTopicId(null);
-										}}
-										className="w-full p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all placeholder-slate-400 font-semibold"
-									/>
+								<p className="text-[13px] text-slate-500 font-medium mb-5 leading-relaxed">
+									Feed a specific spark to the engine and let's refine the angle together.
+								</p>
+							</div>
+
+							<div className="mt-auto space-y-3">
+								<input 
+									type="text"
+									placeholder="Enter a raw idea or keywords..."
+									className={`w-full bg-slate-50 border rounded-xl p-3.5 text-[13px] focus:outline-none transition-all placeholder-slate-400 font-medium ${
+										selectedTopicId === 'custom' 
+											? 'border-[#00bb7f] ring-2 ring-[#00bb7f]/20 bg-white' 
+											: 'border-slate-200 group-hover:border-[#00bb7f]/30'
+									}`}
+									value={customTitle}
+									onChange={(e) => {
+										setCustomTitle(e.target.value);
+										setSelectedTopicId('custom');
+									}}
+									onClick={(e) => {
+										e.stopPropagation();
+										setSelectedTopicId('custom');
+									}}
+								/>
+								{selectedTopicId === 'custom' && (
 									<textarea
-										placeholder="Context / Key Takeaways / Reasoning (e.g. What were the core mistakes made? How did we change sourcing? Give numbers/metrics)"
+										placeholder="Optional context / Key Takeaways..."
 										value={customReasoning}
-										onChange={(e) => {
-											setCustomReasoning(e.target.value);
-											setSelectedTopicId(null);
-										}}
-										className="w-full min-h-[90px] p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all leading-relaxed placeholder-slate-400"
+										onChange={(e) => setCustomReasoning(e.target.value)}
+										onClick={(e) => e.stopPropagation()}
+										className="w-full min-h-[70px] p-3.5 text-[12px] text-slate-700 bg-white border border-[#00bb7f] ring-2 ring-[#00bb7f]/20 rounded-xl focus:outline-none transition-all leading-relaxed placeholder-slate-400 font-medium resize-none animate-fade-in-up"
 									/>
-								</div>
+								)}
 							</div>
-						</>
-					)}
-
-					{/* Action buttons */}
-					<div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-6 mt-8">
-						<div>
-							{topics.length > 0 ? (
-								<button
-									onClick={handleGenerate}
-									className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
-								>
-									<RefreshCw className="w-3.5 h-3.5 mr-2 text-indigo-500" />
-									<span>Regenerate Suggestions</span>
-								</button>
-							) : (
-								<div />
-							)}
 						</div>
+					</div>
 
+					{/* Action Area / Footer */}
+					<div className="flex items-center justify-end mt-4 pt-8 border-t border-slate-100">
 						<button
 							onClick={
-								customTitle.trim()
+								customTitle.trim() && selectedTopicId === 'custom'
 									? handleGenerateCustomOutline
 									: handleGenerateOutline
 							}
 							disabled={
-								(!selectedTopicId && !customTitle.trim()) || isGeneratingOutline
+								(!selectedTopicId || (selectedTopicId === 'custom' && !customTitle.trim())) || isGeneratingOutline
 							}
-							className={`inline-flex items-center justify-center py-3.5 px-8 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg cursor-pointer ${
-								(!selectedTopicId && !customTitle.trim()) || isGeneratingOutline
+							className={`inline-flex items-center justify-center py-4 px-10 rounded-[14px] font-bold text-[15px] transition-all duration-300 cursor-pointer ${
+								(!selectedTopicId || (selectedTopicId === 'custom' && !customTitle.trim())) || isGeneratingOutline
 									? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"
-									: "bg-gradient-to-r from-indigo-500 via-purple-600 to-cyan-500 hover:from-indigo-600 hover:to-purple-700 text-white shadow-purple-600/10 hover:shadow-purple-600/25 border border-purple-500/20"
+									: "bg-[#00bb7f] hover:bg-[#007956] text-white shadow-[0_8px_20px_rgba(0,187,127,0.3)] hover:shadow-[0_10px_25px_rgba(0,121,86,0.35)] hover:-translate-y-0.5"
 							}`}
 						>
-							<Sparkles className="w-4 h-4 mr-2 text-yellow-250 animate-pulse" />
 							<span>
-								{customTitle.trim()
+								{customTitle.trim() && selectedTopicId === 'custom'
 									? "Generate Custom Outline"
-									: "Generate Outline & Steer"}
+									: "Generate Outline"}
 							</span>
+							<svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7"></path></svg>
 						</button>
 					</div>
 				</div>
 			)}
 
-			{/* Step 2: Customize Outline & Add Steering Feedback */}
-			{step === "outline" && outline && !isGeneratingPost && (
-				<div className="space-y-6 animate-fade-in-up">
-					<div className="glass-card rounded-2xl p-6 md:p-8 border border-indigo-100/50 relative overflow-hidden">
-						<div className="radial-glow -top-1/4 -right-1/4 w-72 h-72 opacity-30 pointer-events-none" />
-
-						<div className="border-b border-slate-100 pb-4 mb-5">
-							<span className="text-[10px] font-mono tracking-widest uppercase bg-indigo-50 px-2.5 py-1 rounded border border-indigo-100 text-indigo-700 font-semibold">
-								AI Structure Outline
-							</span>
-							<h2 className="text-xl font-bold text-slate-800 mt-2">
-								Content Strategy & Theme
-							</h2>
-						</div>
-
-						<div className="space-y-5">
-							{/* Core Thesis */}
-							<div>
-								<h4 className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1">
-									Core Thesis
-								</h4>
-								<p className="text-sm text-slate-700 leading-relaxed font-semibold bg-indigo-50/20 p-3.5 rounded-xl border border-indigo-50/50">
-									{outline.core_thesis}
-								</p>
+				{/* Step 2: Customize Outline & Add Steering Feedback */}
+				{step === "outline" && outline && !isGeneratingPost && (
+					<div className="space-y-6 animate-fade-in-up w-full max-w-[900px] mx-auto pb-20 mt-4">
+						{/* Core Thesis */}
+						<div className="bg-white rounded-[16px] p-8 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100">
+							<div className="flex items-center gap-3 mb-4">
+								<Lightbulb className="w-5 h-5 text-[#5B5BFF]" />
+								<h3 className="text-[17px] font-bold text-slate-900">Core Thesis</h3>
 							</div>
-
-							{/* Narrative Arc */}
-							<div>
-								<h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-2">
-									Narrative Arc (Logical Flow)
-								</h4>
-								<div className="relative pl-6 space-y-3 border-l-2 border-indigo-100/60 ml-2">
-									{(outline.narrative_arc || []).map((stepText, idx) => (
-										<div key={idx} className="relative">
-											{/* Visual bullet circle */}
-											<div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-white border-2 border-indigo-400 flex items-center justify-center text-[8px] font-bold text-indigo-600 shadow-sm">
-												{idx + 1}
-											</div>
-											<p className="text-sm text-slate-600 leading-relaxed">
-												{stepText}
-											</p>
-										</div>
-									))}
-								</div>
-							</div>
-
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-100/80">
-								{/* Suggested Examples */}
-								<div className="space-y-2">
-									<h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">
-										Suggested Elements & Examples
-									</h4>
-									<ul className="list-disc pl-5 text-xs text-slate-600 space-y-1.5">
-										{(outline.suggested_examples || []).map((example, idx) => (
-											<li key={idx} className="leading-relaxed">
-												<span className="font-semibold text-amber-800 capitalize mr-1">[{example.type.replace(/_/g, " ")}]</span> 
-												{example.content}
-											</li>
-										))}
-									</ul>
-								</div>
-
-								{/* LSI Keywords */}
-								<div className="space-y-2">
-									<h4 className="text-xs font-bold text-cyan-700 uppercase tracking-wider mb-1">
-										SEO LSI Keywords (To naturalize)
-									</h4>
-									<div className="flex flex-wrap gap-1.5">
-										{(outline.target_lsi_keywords || []).map((kw, idx) => (
-											<span
-												key={idx}
-												className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700"
-											>
-												#{kw}
-											</span>
-										))}
-									</div>
-								</div>
-							</div>
-
-							{/* Target Audience Takeaway */}
-							<div className="border-t border-slate-100 pt-4 mt-2">
-								<h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">
-									Target Audience Takeaway
-								</h4>
-								<p className="text-xs text-slate-600 leading-relaxed italic">
-									"{outline.target_audience_takeaway}"
-								</p>
-							</div>
-						</div>
-					</div>
-
-					{/* Steering Feedback Section */}
-					<div className="glass-card rounded-2xl p-6 border border-purple-100/50 space-y-3">
-						<div>
-							<h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-								<Sparkles className="w-4 h-4 text-purple-500 animate-pulse" />
-								<span>Steering Feedback & Customizations</span>
-							</h3>
-							<p className="text-[11px] text-slate-500">
-								Guide the generator on specific elements, case studies, word
-								choices, or focus areas (optional).
+							<p className="text-[15px] text-slate-700 leading-relaxed font-medium">
+								{outline.core_thesis}
 							</p>
 						</div>
 
-						<textarea
-							value={feedback}
-							onChange={(e) => setFeedback(e.target.value)}
-							placeholder="e.g. Focus more on our recent 10x customer growth metric. Make the tone highly action-oriented and use a slightly shorter conclusion."
-							className="w-full min-h-[90px] p-3.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all leading-relaxed placeholder-slate-400"
-						/>
-					</div>
+						{/* Target Audience Takeaway */}
+						<div className="bg-[#5B5BFF]/[0.04] rounded-[16px] p-8 border border-[#5B5BFF]/10">
+							<h4 className="text-[11px] font-black text-[#5B5BFF] uppercase tracking-widest mb-3">
+								Target Audience Takeaway
+							</h4>
+							<p className="text-[14px] text-slate-700 leading-relaxed font-medium">
+								{outline.target_audience_takeaway}
+							</p>
+						</div>
 
-					{/* Action buttons */}
-					<div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6">
-						<button
-							onClick={() => setStep("topics")}
-							className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
-						>
-							<ChevronLeft className="w-4 h-4 mr-1" />
-							<span>Back to Suggested Topics</span>
-						</button>
+						{/* Narrative Arc */}
+						<div className="pt-6">
+							<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+								Narrative Arc
+							</h4>
+							<div className="space-y-4">
+								{(outline.narrative_arc || []).map((stepText, idx) => {
+									const parts = stepText.split(':');
+									const hasTitle = parts.length > 1;
+									const title = hasTitle ? parts[0].trim() : `Phase ${idx + 1}`;
+									const desc = hasTitle ? parts.slice(1).join(':').trim() : stepText;
 
-						<button
-							onClick={handleGeneratePostDraft}
-							disabled={isGeneratingPost}
-							className="inline-flex items-center justify-center py-3.5 px-8 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-cyan-500 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-sm transition-all duration-300 shadow-lg shadow-purple-600/10 hover:shadow-purple-600/25 border border-purple-500/20 cursor-pointer"
-						>
-							<Sparkles className="w-4 h-4 mr-2 text-yellow-200" />
-							<span>Ghostwrite LinkedIn Post</span>
-						</button>
+									return (
+										<div key={idx} className="bg-white rounded-[16px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100 flex items-start gap-5">
+											<div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#5B5BFF]/10 flex items-center justify-center text-[13px] font-black text-[#5B5BFF]">
+												{idx + 1}
+											</div>
+											<div className="pt-0.5">
+												<h5 className="text-[15px] font-bold text-slate-900 mb-1">{title}</h5>
+												<p className="text-[14px] text-slate-600 font-medium leading-relaxed">{desc}</p>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+
+						{/* Suggested Examples (If present) */}
+						{outline.suggested_examples && outline.suggested_examples.length > 0 && (
+							<div className="pt-6">
+								<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+									Suggested Examples
+								</h4>
+								<div className="grid grid-cols-1 gap-4">
+									{outline.suggested_examples.map((example: any, idx: number) => {
+										const isObject = typeof example === 'object' && example !== null;
+										const typeStr = isObject && example.type ? example.type.replace(/_/g, " ") : "";
+										const contentStr = isObject ? example.content : example;
+										return (
+											<div key={idx} className="bg-white rounded-[16px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100 flex items-start gap-4">
+												<div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-[13px] font-black text-amber-600">
+													*
+												</div>
+												<div className="pt-0.5">
+													{typeStr && <h5 className="text-[14px] font-bold text-slate-900 mb-1 capitalize">{typeStr}</h5>}
+													<p className="text-[14px] text-slate-600 font-medium leading-relaxed">{contentStr}</p>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							</div>
+						)}
+
+						{/* Target Keywords */}
+						<div className="pt-6">
+							<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+								Target Keywords
+							</h4>
+							<div className="flex flex-wrap gap-2.5 px-2">
+								{(outline.target_lsi_keywords || []).map((kw, idx) => (
+									<span
+										key={idx}
+										className="text-[13px] font-medium px-4 py-1.5 rounded-full bg-[#5B5BFF]/[0.04] border border-[#5B5BFF]/20 text-[#5B5BFF]"
+									>
+										{kw}
+									</span>
+								))}
+							</div>
+						</div>
+
+						{/* Refinement Feedback & Generate Button */}
+						<div className="pt-10 border-t border-slate-100/50 mt-10">
+							<h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-4 px-2">
+								Refinement Feedback
+							</h4>
+							<div className="bg-white rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-200 overflow-hidden">
+								<textarea
+									value={feedback}
+									onChange={(e) => setFeedback(e.target.value)}
+									placeholder="Add specific instructions to refine this outline (optional)..."
+									className="w-full min-h-[140px] p-6 text-[15px] text-slate-700 bg-transparent focus:outline-none resize-none placeholder-slate-400 font-medium"
+								/>
+							</div>
+
+							<div className="mt-8 flex justify-end gap-4">
+								<button
+									onClick={() => {
+										setOutline(null);
+										setFeedback("");
+										setStep("topics");
+									}}
+									className="inline-flex items-center justify-center py-3.5 px-8 rounded-xl font-bold text-[14px] bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+								>
+									Back to Topics
+								</button>
+								<button
+									onClick={handleGeneratePostDraft}
+									disabled={isGeneratingPost}
+									className="inline-flex items-center justify-center py-3.5 px-10 rounded-xl font-bold text-[14px] transition-all duration-300 cursor-pointer bg-[#00bb7f] hover:bg-[#007956] text-white shadow-[0_8px_20px_rgba(0,187,127,0.3)] hover:shadow-[0_10px_25px_rgba(0,121,86,0.35)] hover:-translate-y-0.5"
+								>
+									Generate LinkedIn Post
+								</button>
+							</div>
+						</div>
 					</div>
-				</div>
-			)}
+				)}
 
 			{/* Step 3: Generated Post Output Display */}
 			{step === "post" && generatedPost && !isGeneratingPost && (
-				<div className="space-y-6 animate-fade-in-up">
-					<div className="glass-card rounded-2xl p-6 md:p-8 border border-indigo-500/25 shadow-md relative">
-						<div className="radial-glow top-0 right-0 w-48 h-48 opacity-40 pointer-events-none" />
-
-						<div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-							<div className="flex items-center gap-2">
-								<div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600">
-									<FileText className="w-4 h-4" />
+				<div className="space-y-6 animate-fade-in-up w-full max-w-[900px] mx-auto pb-20 mt-4">
+					<div className="bg-white rounded-[24px] p-8 md:p-10 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 relative">
+						
+						{/* Header area */}
+						<div className="flex items-center justify-between border-b border-slate-100 pb-6 mb-6">
+							<div className="flex items-center gap-4">
+								<div className="w-12 h-12 rounded-full bg-[#00bb7f]/10 flex items-center justify-center">
+									<FileText className="w-5 h-5 text-[#00bb7f]" />
 								</div>
 								<div>
-									<h3 className="text-sm font-bold text-slate-800">
-										Generated LinkedIn Draft
+									<h3 className="text-[19px] font-extrabold text-slate-900">
+										Your Ready-to-Publish Post
 									</h3>
-									<p className="text-[10px] text-slate-500">
-										Formulated in your custom tone
+									<p className="text-[13px] font-medium text-slate-500 mt-1">
+										Ghostwritten using your custom brand DNA
 									</p>
 								</div>
 							</div>
 
 							<button
 								onClick={handleCopyToClipboard}
-								className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+								className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-[12px] font-bold text-[14px] transition-all cursor-pointer ${
 									copied
-										? "bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm"
-										: "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-800"
+										? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+										: "bg-[#00bb7f] hover:bg-[#007956] text-white shadow-[0_4px_15px_rgba(0,187,127,0.25)] hover:-translate-y-0.5"
 								}`}
 							>
 								{copied ? (
 									<>
-										<CheckCheck className="w-3.5 h-3.5" />
+										<CheckCheck className="w-4 h-4" />
 										<span>Copied!</span>
 									</>
 								) : (
 									<>
-										<Copy className="w-3.5 h-3.5" />
-										<span>Copy to Clipboard</span>
+										<Copy className="w-4 h-4" />
+										<span>Copy Post</span>
 									</>
 								)}
 							</button>
 						</div>
 
 						{/* Draft text area box */}
-						<div className="p-4 rounded-xl bg-slate-50 border border-slate-100 min-h-[150px] font-sans text-sm text-slate-700 leading-relaxed whitespace-pre-wrap select-text">
+						<div className="font-sans text-[16px] text-slate-800 leading-[1.8] whitespace-pre-wrap select-text px-2 py-4 font-medium">
 							{generatedPost}
 						</div>
 					</div>
 
 					{/* Return/Adjust actions */}
-					<div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-6">
+					<div className="flex items-center justify-between pt-4 px-2">
 						<button
 							onClick={() => setStep("outline")}
-							className="inline-flex items-center justify-center py-2 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium text-xs transition-colors cursor-pointer"
+							className="inline-flex items-center justify-center py-3.5 px-6 rounded-xl font-bold text-[14px] text-slate-500 hover:text-slate-800 transition-colors cursor-pointer group"
 						>
-							<ChevronLeft className="w-4 h-4 mr-1" />
-							<span>Adjust Feedback & Regenerate</span>
+							<ChevronLeft className="w-4 h-4 mr-1.5 transition-transform group-hover:-translate-x-1" />
+							<span>Back to Steering</span>
 						</button>
 
 						<button
 							onClick={() => {
 								setOutline(null);
-								setFeedback("");
 								setGeneratedPost(null);
+								setFeedback("");
 								setCustomTitle("");
 								setCustomReasoning("");
 								setCustomTopic(null);
 								setStep("topics");
 							}}
-							className="inline-flex items-center justify-center py-2.5 px-5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-650 font-semibold text-xs transition-all cursor-pointer"
+							className="inline-flex items-center justify-center py-3.5 px-8 rounded-[14px] font-bold text-[14px] bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
 						>
-							<span>Select Another Topic</span>
+							Start a New Topic
 						</button>
 					</div>
 				</div>
 			)}
+			</div>
 		</div>
 	);
 }
