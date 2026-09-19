@@ -49,7 +49,6 @@ interface ProfileDashboardProps {
 export default function ProfileDashboard({
 	profile,
 	onUpdateProfile,
-	onReset,
 	onProceedToTopics,
 	onRegenerateDNA,
 }: ProfileDashboardProps) {

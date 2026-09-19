@@ -5,7 +5,6 @@ import PostLoadingScreen from "./PostLoadingScreen";
 import {
 	Lightbulb,
 	ChevronLeft,
-	Sparkles,
 	Compass,
 	TrendingUp,
 	Target,
