@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Sparkles, LogOut, Cpu, Settings2 } from "lucide-react";
+import { Sparkles, Cpu, Settings2 } from "lucide-react";
 import { initSupabase, getSupabase } from "./utils/supabaseClient";
 import Auth from "./components/Auth";
 import Onboarding from "./components/Onboarding";
@@ -8,21 +8,6 @@ import ProfileDashboard from "./components/ProfileDashboard";
 import type { WritingProfile } from "./components/ProfileDashboard";
 import TopicGenerator from "./components/TopicGenerator";
 
-const LinkedinIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-    <rect x="2" y="9" width="4" height="12" />
-    <circle cx="4" cy="4" r="2" />
-  </svg>
-);
 
 type ScreenView =
   | "AUTH"
@@ -38,7 +23,7 @@ export default function App() {
   const [view, setView] = useState<ScreenView>("AUTH");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<WritingProfile | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-oss:120b");
+  const [selectedModel] = useState<string>("gpt-oss:120b");
 
   // API loading synchronizations
   const [isInitializing, setIsInitializing] = useState(true);
