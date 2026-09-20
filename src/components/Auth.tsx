@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Sparkles } from "lucide-react";
 import { getSupabase } from "../utils/supabaseClient";
 
 export default function Auth() {
@@ -99,9 +98,8 @@ export default function Auth() {
       <div className="relative z-10 w-full max-w-[480px] animate-fade-in-up mt-8 mb-12">
         {/* Header Area */}
         <div className="text-center mb-10 flex flex-col items-center">
-          <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#00bb7f]/10 border border-[#00bb7f]/20 text-[#007956] text-xs font-bold tracking-wide mb-6">
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> v2.0 DNA Sync Active
-          </span>
+          {/* <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#00bb7f]/10 border border-[#00bb7f]/20 text-[#007956] text-xs font-bold tracking-wide mb-6">
+          </span> */}
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-4">
             Your AI Twin for{" "}
             <span className="text-[#00bb7f] italic font-serif">LinkedIn</span>

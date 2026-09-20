@@ -7,8 +7,6 @@ import Loader from "./components/Loader";
 import ProfileDashboard from "./components/ProfileDashboard";
 import type { WritingProfile } from "./components/ProfileDashboard";
 import TopicGenerator from "./components/TopicGenerator";
-
-
 type ScreenView =
   | "AUTH"
   | "ONBOARDING"
@@ -431,57 +429,35 @@ export default function App() {
   // Initializing Credentials State Loader
   if (isInitializing) {
     return (
-      <div className="min-h-screen bg-warm-bg flex flex-col items-center justify-center p-6 text-center select-none animate-fade-in-up">
-        {/* Orbital AI Spinner */}
-        <div className="relative w-32 h-32 mb-6 flex items-center justify-center mx-auto">
-          {/* Outer Pulsing Ring */}
-          <div className="absolute inset-0 rounded-full border-2 border-indigo-500/10 animate-pulse" />
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden relative">
+        {/* Subtle background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#f0fdf6] via-[#e0f2fe] to-[#f5f3ff] opacity-40 -z-10 pointer-events-none" />
 
-          {/* Orbit Ring 1 - Cyan */}
-          <div
-            className="absolute w-26 h-26 rounded-full border-t border-b border-cyan-500/20 animate-spin"
-            style={{ animationDuration: "8s" }}
-          />
-
-          {/* Orbit Ring 2 - Violet (Spinning Counter-Clockwise) */}
-          <div
-            className="absolute w-20 h-20 rounded-full border-l border-r border-purple-500/20 animate-spin"
-            style={{ animationDirection: "reverse", animationDuration: "6s" }}
-          />
-
-          {/* Orbit Ring 3 - Indigo (Fast) */}
-          <div
-            className="absolute w-16 h-16 rounded-full border-t-2 border-indigo-500/40 animate-spin"
-            style={{ animationDuration: "2.5s" }}
-          />
-
-          {/* Inner Hub Glass Sphere */}
-          <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-md relative">
-            <Cpu className="w-4 h-4 text-indigo-600 animate-pulse" />
-            <div className="absolute -top-0.5 -right-0.5">
-              <Sparkles
-                className="w-3 h-3 text-cyan-600 animate-bounce"
-                style={{ animationDuration: "1.5s" }}
-              />
+        <div className="relative z-10 w-full max-w-[500px] flex flex-col items-center animate-fade-in-up">
+          {/* Pulsing Icon Core */}
+          <div className="relative w-24 h-24 mb-8">
+            <div className="absolute inset-0 bg-[#00bb7f]/10 rounded-full animate-ping" />
+            <div className="relative w-full h-full bg-white rounded-full shadow-[0_0_40px_rgba(0,187,127,0.2)] flex items-center justify-center border-2 border-[#00bb7f]/20">
+              <Cpu className="w-10 h-10 text-[#00bb7f] animate-pulse" />
             </div>
           </div>
-        </div>
 
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] font-mono font-semibold text-indigo-600 uppercase tracking-wider mb-2.5 animate-pulse">
-          <Sparkles
-            className="w-3 h-3 text-cyan-500 animate-spin"
-            style={{ animationDuration: "6s" }}
-          />
-          <span>Synchronizing Session</span>
-        </div>
+          <h1 className="text-[28px] md:text-[36px] font-extrabold text-slate-900 mb-3 tracking-tight">
+            AIPulse
+          </h1>
+          <p className="text-slate-500 font-medium mb-10 text-[15px] max-w-sm">
+            Authenticating session and establishing secure connection to your
+            writing DNA.
+          </p>
 
-        <p className="text-sm font-bold text-slate-800 animate-pulse">
-          Establishing Secure Handshake with Writing DNA Engine...
-        </p>
-        <p className="text-[11px] text-slate-500 max-w-xs mt-1 mx-auto">
-          Authenticating SUPABASE gateway credentials and restoring persona
-          index mappings.
-        </p>
+          {/* Clean Loading Card */}
+          <div className="w-full bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 flex items-center gap-4 justify-center">
+            <Sparkles className="w-5 h-5 text-[#00bb7f] animate-spin" />
+            <span className="text-[14px] font-bold text-slate-800 tracking-wide">
+              Synchronizing Database...
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
