@@ -21,7 +21,39 @@ export default function App() {
   const [view, setView] = useState<ScreenView>("AUTH");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<WritingProfile | null>(null);
-  const [selectedModel] = useState<string>("gpt-oss:120b");
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-oss:120b");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [usedTokens, setUsedTokens] = useState<number>(0);
+  const [tokenLimit, setTokenLimit] = useState<number>(10000);
+  // Fetch usage when settings opens
+  useEffect(() => {
+    if (isSettingsOpen && userEmail) {
+      const fetchUsage = async () => {
+        try {
+          const supabase = getSupabase();
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+          
+          const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+          const res = await fetch(`${apiUrl}/api/tokens/usage`, {
+            headers: { Authorization: `Bearer ${session.access_token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (typeof data.current_usage === 'number') {
+              setUsedTokens(data.current_usage);
+            }
+            if (typeof data.total_token_limit === 'number') {
+              setTokenLimit(data.total_token_limit);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch usage");
+        }
+      };
+      fetchUsage();
+    }
+  }, [isSettingsOpen, userEmail]);
 
   // API loading synchronizations
   const [isInitializing, setIsInitializing] = useState(true);
@@ -497,25 +529,94 @@ export default function App() {
           <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
             {/* Left: Brand */}
             <div className="flex items-center">
-              <span className="font-extrabold text-[22px] tracking-tight text-[#5B5BFF]">
+              <span className="font-extrabold text-[22px] tracking-tight text-[#00bb7f]">
                 AIPulse
               </span>
             </div>
 
             {/* Right: Controls */}
             <div className="flex items-center gap-6">
-              <button
-                className="text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-                title="Settings"
-              >
-                <Settings2 className="w-5 h-5" />
-              </button>
+              {/* Settings Dropdown Container */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                  className={`transition-colors cursor-pointer p-2 rounded-lg flex items-center ${isSettingsOpen ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}`}
+                  title="Settings"
+                >
+                  <Settings2 className="w-5 h-5" />
+                </button>
+
+                {isSettingsOpen && (
+                  <>
+                    {/* Invisible overlay to close on click outside */}
+                    <div className="fixed inset-0 z-40" onClick={() => setIsSettingsOpen(false)} />
+                    
+                    {/* The Dropdown Panel */}
+                    <div className="absolute right-0 top-full mt-3 w-[340px] bg-white rounded-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.12)] border border-slate-100 z-50 animate-fade-in-up origin-top-right overflow-hidden">
+                      <div className="p-5 border-b border-slate-50 bg-slate-50/50">
+                        <h3 className="text-[14px] font-extrabold text-slate-800">Account Preferences</h3>
+                      </div>
+                      
+                      <div className="p-5 space-y-6">
+                        {/* Usage Section */}
+                        {(() => {
+                          const usagePercentage = Math.min((usedTokens / tokenLimit) * 100, 100);
+                          const isExhausted = usagePercentage >= 100;
+                          const isNearLimit = usagePercentage > 90;
+                          const activeColor = isNearLimit ? 'bg-rose-500' : 'bg-[#00bb7f]';
+                          const activeBgLight = isNearLimit ? 'bg-rose-50' : 'bg-[#00bb7f]/10';
+
+                          return (
+                            <div>
+                              <div className="flex justify-between items-center mb-2">
+                                <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Daily Token Quota</h4>
+                                <span className={`flex items-center justify-center w-5 h-5 rounded-md ${activeBgLight} transition-colors duration-300`} title={isExhausted ? "Quota Exhausted" : isNearLimit ? "High Usage" : "Normal Usage"}>
+                                  <span className="relative flex h-1.5 w-1.5">
+                                    {!isExhausted && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${activeColor} opacity-75`}></span>}
+                                    <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${activeColor}`}></span>
+                                  </span>
+                                </span>
+                              </div>
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-full ${activeColor} transition-all duration-700 ${isExhausted ? 'opacity-80' : ''}`} style={{ width: `${usagePercentage}%` }} />
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                <p className={`text-[10px] font-medium ${isExhausted ? 'text-rose-500' : 'text-slate-400'}`}>
+                                  {isExhausted ? 'Quota exhausted. Resets at midnight UTC.' : 'Usage resets at midnight UTC.'}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Model Selection */}
+                        <div>
+                          <h4 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2">AI Engine</h4>
+                          <div className="relative">
+                            <select
+                              value={selectedModel}
+                              onChange={(e) => setSelectedModel(e.target.value)}
+                              className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-[13px] font-semibold rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-[#00bb7f]/20 focus:border-[#00bb7f]/50 cursor-pointer transition-all shadow-sm"
+                            >
+                              <option value="gpt-oss:120b">gpt-oss:120b (Default)</option>
+                              <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Groq)</option>
+                              <option value="llama3-8b-8192">llama3-8b-8192 (Groq)</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {userEmail && (
                 <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
                   <div className="w-9 h-9 rounded-full bg-slate-800 border-2 border-white shadow-sm flex items-center justify-center font-bold text-sm text-white uppercase relative">
                     {userEmail.charAt(0)}
-                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#5B5BFF] border-2 border-white rounded-full"></div>
                   </div>
                   <div className="hidden sm:flex flex-col items-start">
                     <span className="text-[13px] font-bold text-slate-800">
@@ -559,7 +660,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer removed as per design changes */}
     </div>
   );
 }
