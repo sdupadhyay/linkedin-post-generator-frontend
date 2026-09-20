@@ -40,9 +40,8 @@ export default function App() {
   const [profile, setProfile] = useState<WritingProfile | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>("gpt-oss:120b");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [usedTokens, setUsedTokens] = useState<number>(4000);
-  const TOKEN_LIMIT = 10000;
-
+  const [usedTokens, setUsedTokens] = useState<number>(0);
+  const [tokenLimit, setTokenLimit] = useState<number>(10000);
   // Fetch usage when settings opens
   useEffect(() => {
     if (isSettingsOpen && userEmail) {
@@ -53,17 +52,16 @@ export default function App() {
           if (!session) return;
           
           const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-          const res = await fetch(`${apiUrl}/api/usage`, {
+          const res = await fetch(`${apiUrl}/api/tokens/usage`, {
             headers: { Authorization: `Bearer ${session.access_token}` }
           });
           if (res.ok) {
             const data = await res.json();
-            if (typeof data.usage === 'number') {
-              setUsedTokens(data.usage);
-            } else if (typeof data === 'number') {
-              setUsedTokens(data);
-            } else if (typeof data.used === 'number') {
-              setUsedTokens(data.used);
+            if (typeof data.current_usage === 'number') {
+              setUsedTokens(data.current_usage);
+            }
+            if (typeof data.total_token_limit === 'number') {
+              setTokenLimit(data.total_token_limit);
             }
           }
         } catch (e) {
@@ -601,7 +599,7 @@ export default function App() {
                       <div className="p-5 space-y-6">
                         {/* Usage Section */}
                         {(() => {
-                          const usagePercentage = Math.min((usedTokens / TOKEN_LIMIT) * 100, 100);
+                          const usagePercentage = Math.min((usedTokens / tokenLimit) * 100, 100);
                           const isExhausted = usagePercentage >= 100;
                           const isNearLimit = usagePercentage > 90;
                           const activeColor = isNearLimit ? 'bg-rose-500' : 'bg-[#00bb7f]';
@@ -625,13 +623,6 @@ export default function App() {
                                 <p className={`text-[10px] font-medium ${isExhausted ? 'text-rose-500' : 'text-slate-400'}`}>
                                   {isExhausted ? 'Quota exhausted. Resets at midnight UTC.' : 'Usage resets at midnight UTC.'}
                                 </p>
-                                <button 
-                                  onClick={() => setUsedTokens(isExhausted ? 4000 : (isNearLimit ? 10000 : 9500))} 
-                                  className="text-[9px] font-bold text-slate-400 hover:text-slate-600 border border-slate-200 rounded px-1.5 py-0.5 transition-colors cursor-pointer ml-2"
-                                  title="Test Limit Toggle"
-                                >
-                                  {isExhausted ? 'RESET TEST' : (isNearLimit ? 'TEST 100%' : 'TEST 95%')}
-                                </button>
                               </div>
                             </div>
                           );
